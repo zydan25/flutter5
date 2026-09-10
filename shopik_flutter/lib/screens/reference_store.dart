@@ -4,7 +4,6 @@ import '../core/app_controller.dart';
 import '../models/models.dart';
 import '../widgets/common.dart';
 import 'screen_common.dart';
-import 'reference_account.dart';
 
 class StoreView extends StatefulWidget {
   const StoreView({super.key});
@@ -64,6 +63,22 @@ class _StoreViewState extends State<StoreView> {
         ),
         IconButton(onPressed: app.refreshAll, icon: const Icon(Icons.refresh_rounded)),
       ],
+      bottomSheet: cart.isEmpty ? null : SafeArea(child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3))]),
+        child: Row(children: [
+          Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$totalCartCount منتجات في السلة', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+            Text(money(total), style: const TextStyle(fontSize: 14, color: AppColors.burgundy, fontWeight: FontWeight.w900)),
+          ])),
+          FilledButton.icon(
+            onPressed: () => _openCartSheet(context, app),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.emerald, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
+            icon: const Icon(Icons.shopping_cart_checkout_rounded, size: 18),
+            label: const Text('عرض السلة والدفع', style: TextStyle(fontWeight: FontWeight.w900)),
+          ),
+        ]),
+      )),
       child: RefreshIndicator(
         color: AppColors.emerald,
         onRefresh: app.refreshAll,
@@ -159,22 +174,6 @@ class _StoreViewState extends State<StoreView> {
           ],
         ),
       ),
-      bottomSheet: cart.isEmpty ? null : SafeArea(child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3))]),
-        child: Row(children: [
-          Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('$totalCartCount منتجات في السلة', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
-            Text(money(total), style: const TextStyle(fontSize: 14, color: AppColors.burgundy, fontWeight: FontWeight.w900)),
-          ])),
-          FilledButton.icon(
-            onPressed: () => _openCartSheet(context, app),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.emerald, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10)),
-            icon: const Icon(Icons.shopping_bag_checkout_rounded, size: 18),
-            label: const Text('عرض السلة والدفع', style: TextStyle(fontWeight: FontWeight.w900)),
-          ),
-        ]),
-      )),
     );
   }
 
@@ -498,6 +497,66 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           icon: const Icon(Icons.share_rounded),
         ),
       ],
+      bottomSheet: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, -2))],
+          ),
+          child: Row(
+            children: [
+              // Quantity selector
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
+                      icon: const Icon(Icons.remove_rounded, size: 18),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Text('$quantity', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      onPressed: () => setState(() => quantity++),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Add to cart button
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: product.stock <= 0
+                      ? null
+                      : () {
+                          for (int i = 0; i < quantity; i++) {
+                            widget.onAdd?.call();
+                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('تمت إضافة $quantity من "${product.name}" إلى السلة'),
+                              backgroundColor: AppColors.emerald,
+                            ),
+                          );
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.emerald,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+                  label: const Text('إضافة إلى السلة', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
       child: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -656,66 +715,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           const SizedBox(height: 80),
         ],
       ),
-      bottomSheet: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, -2))],
-          ),
-          child: Row(
-            children: [
-              // Quantity selector
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: quantity > 1 ? () => setState(() => quantity--) : null,
-                      icon: const Icon(Icons.remove_rounded, size: 18),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    Text('$quantity', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    IconButton(
-                      onPressed: () => setState(() => quantity++),
-                      icon: const Icon(Icons.add_rounded, size: 18),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Add to cart button
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: product.stock <= 0
-                      ? null
-                      : () {
-                          for (int i = 0; i < quantity; i++) {
-                            widget.onAdd?.call();
-                          }
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('تمت إضافة $quantity من "${product.name}" إلى السلة'),
-                              backgroundColor: AppColors.emerald,
-                            ),
-                          );
-                        },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.emerald,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                  label: const Text('إضافة إلى السلة', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -857,7 +856,7 @@ class OrdersDetailView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('طلب رقم #${o.number}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                            Text('${o.createdAt ?? 'اليوم'}', style: const TextStyle(fontSize: 10, color: AppColors.muted)),
+                            Text(o.createdAt ?? 'اليوم', style: const TextStyle(fontSize: 10, color: AppColors.muted)),
                           ],
                         ),
                       ),
@@ -959,12 +958,14 @@ class OrderDetailScreen extends StatelessWidget {
   }
 
   Future<void> _confirm(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final app = context.read<AppController>();
     try {
-      await context.read<AppController>().api.confirmReceived(orderId);
-      await context.read<AppController>().refreshAll();
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تأكيد الاستلام.')));
+      await app.api.confirmReceived(orderId);
+      await app.refreshAll();
+      messenger.showSnackBar(const SnackBar(content: Text('تم تأكيد الاستلام.')));
     } catch(e) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 }

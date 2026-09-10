@@ -662,7 +662,7 @@ class _SubscriberTransferScreenState extends State<SubscriberTransferScreen> {
     }
     if (lookup == null) {
       await lookupRecipient();
-      if (lookup == null) return;
+      if (!mounted || lookup == null) return;
     }
 
     final targetName = lookup!['receiver_name'] ?? phone;
@@ -670,7 +670,7 @@ class _SubscriberTransferScreenState extends State<SubscriberTransferScreen> {
     // Show confirmation dialog before sending
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dlgCtx) => AlertDialog(
         title: const Text('تأكيد التحويل المالي', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900)),
         content: Text(
           'هل أنت متأكد من تحويل مبلغ $value ر.ي إلى:\n$targetName ($phone)؟',
@@ -678,18 +678,18 @@ class _SubscriberTransferScreenState extends State<SubscriberTransferScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dlgCtx, false),
             child: const Text('إلغاء'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dlgCtx, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.amber, foregroundColor: Colors.black87),
             child: const Text('تأكيد التحويل', style: TextStyle(fontWeight: FontWeight.w900)),
           ),
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (!mounted || confirmed != true) return;
 
     setState(() => busy = true);
     try {

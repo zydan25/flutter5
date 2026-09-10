@@ -1070,12 +1070,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 onPressed: () async {
                   Navigator.pop(ctx);
                   final app = context.read<AppController>();
+                  final messenger = ScaffoldMessenger.of(context);
                   final success = await app.deductBalance(amount, '$itemName لرقم $targetPhone');
                   if (!mounted) return;
                   if (success) {
                     _showSuccessReceiptDialog(itemName: itemName, targetPhone: targetPhone, amount: amount);
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('عفواً، رصيد محفظتك غير كافٍ لإتمام السداد')));
+                    messenger.showSnackBar(const SnackBar(content: Text('عفواً، رصيد محفظتك غير كافٍ لإتمام السداد')));
                   }
                 },
                 style: FilledButton.styleFrom(backgroundColor: currentOp.headerColor),

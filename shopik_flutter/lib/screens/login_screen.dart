@@ -76,6 +76,7 @@ class _ShopikLoginScreenState extends State<ShopikLoginScreen> {
       if (!available) throw Exception('البصمة غير متاحة على هذا الجهاز.');
       final ok = await _biometric.authenticate(localizedReason: 'تأكيد تسجيل الدخول إلى شبيك');
       if (!ok) throw Exception('لم يتم التحقق من البصمة.');
+      if (!mounted) return;
       final app = context.read<AppController>();
       await app.restore();
       if (!app.isLoggedIn) throw Exception('سجّل الدخول بكلمة المرور مرة واحدة قبل استخدام البصمة.');
