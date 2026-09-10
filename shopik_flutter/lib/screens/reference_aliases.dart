@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/models.dart';
 import 'reference_home.dart';
 import 'reference_store.dart';
 import 'reference_account_clean.dart';
@@ -35,9 +36,14 @@ class OrdersScreen extends StatelessWidget {
 
 class ProductDetailScreen extends StatelessWidget {
   const ProductDetailScreen({super.key, required this.product});
-  final Map<String, dynamic> product;
+  final dynamic product;
   @override
-  Widget build(BuildContext context) => ProductDetailView(product: product);
+  Widget build(BuildContext context) {
+    final prod = product is Product
+        ? product as Product
+        : Product.fromJson(product is Map ? Map<String, dynamic>.from(product) : <String, dynamic>{});
+    return ProductDetailView(product: prod);
+  }
 }
 
 class StatementScreen extends StatelessWidget {

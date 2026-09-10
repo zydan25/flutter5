@@ -140,7 +140,7 @@ class _ShopikLoginScreenState extends State<ShopikLoginScreen> {
     const SizedBox(height: 8),
     _field(_registerPhone, 'رقم الهاتف', Icons.smartphone_rounded, phone: true, maxLength: 9),
     const SizedBox(height: 8),
-    DropdownButtonFormField<String>(value: _governorate, decoration: const InputDecoration(prefixIcon: Icon(Icons.location_on_outlined), labelText: 'المحافظة', isDense: true), items: _governorates.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(), onChanged: (v) { if (v != null) setState(() => _governorate = v); }),
+    DropdownButtonFormField<String>(initialValue: _governorate, decoration: const InputDecoration(prefixIcon: Icon(Icons.location_on_outlined), labelText: 'المحافظة', isDense: true), items: _governorates.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(), onChanged: (v) { if (v != null) setState(() => _governorate = v); }),
     const SizedBox(height: 8),
     _field(_registerPassword, 'كلمة المرور', Icons.lock_outline_rounded, obscure: true),
     const SizedBox(height: 8),

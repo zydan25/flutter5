@@ -89,6 +89,14 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> deductBalance(double amount, String note) async {
+    if (walletBalance < amount) return false;
+    walletBalance -= amount;
+    notifyListeners();
+    try { await refreshWalletAndReports(); } catch (_) {}
+    return true;
+  }
+
   Future<void> refreshCatalog() async {
     try {
       final data = await api.serviceCatalog();

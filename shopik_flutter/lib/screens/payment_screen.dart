@@ -30,9 +30,9 @@ class _PackageItem {
     required this.subTitle,
     required this.price,
     required this.days,
-    required this.calls,
-    required this.sms,
-    required this.internet,
+    this.calls = '',
+    this.sms = '',
+    this.internet = '',
     this.netDiscountPrice,
   });
 }
@@ -916,7 +916,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         const Text('إضافة سداد السلفة (+122.0 ر.ي)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF92400E))),
                         Switch(
                           value: includeLoan,
-                          activeColor: const Color(0xFFD97706),
+                          activeThumbColor: const Color(0xFFD97706),
                           onChanged: (v) => setSheetState(() => includeLoan = v),
                         ),
                       ],
