@@ -161,7 +161,7 @@ class _StoreViewState extends State<StoreView> {
       ),
       bottomSheet: cart.isEmpty ? null : SafeArea(child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -3))]),
+        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3))]),
         child: Row(children: [
           Expanded(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('$totalCartCount منتجات في السلة', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
@@ -295,7 +295,7 @@ class _StoreViewState extends State<StoreView> {
                 // Bottom Checkout Controls
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), border: Border(top: BorderSide(color: Colors.black.withOpacity(0.06)))),
+                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.06)))),
                   child: Column(
                     children: [
                       Row(
@@ -388,7 +388,7 @@ class StoreProductCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -419,7 +419,7 @@ class StoreProductCard extends StatelessWidget {
                     onTap: onFavorite,
                     child: CircleAvatar(
                       radius: 14,
-                      backgroundColor: Colors.white.withOpacity(.9),
+                      backgroundColor: Colors.white.withValues(alpha: .9),
                       child: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: favorite ? Colors.red : AppColors.muted, size: 16),
                     ),
                   ),
@@ -532,7 +532,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                           height: 6,
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
-                            color: activeImage == i ? AppColors.emerald : Colors.white.withOpacity(0.7),
+                            color: activeImage == i ? AppColors.emerald : Colors.white.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         );
@@ -661,7 +661,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, -2))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, -2))],
           ),
           child: Row(
             children: [

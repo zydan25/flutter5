@@ -237,6 +237,118 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   _OperatorSpec get currentOp => operators.firstWhere((o) => o.id == currentOpId, orElse: () => operators.first);
 
+  Map<String, List<_PackageItem>> _getPackagesForOp(_OperatorSpec op, AppController app) {
+    // 1) Start with default/pre-configured map as baseline
+    final Map<String, List<_PackageItem>> base = op.id == 'yemen_mobile'
+        ? yemenMobilePackages
+        : op.id == 'sabafon'
+            ? sabafonPackages
+            : youPackages;
+
+    // 2) If live catalog items exist in AppController, augment or generate dynamic categories
+    final services = app.catalogServices;
+    if (op.id == 'yemen_mobile') {
+      final s = services.firstWhere(
+        (x) => x['code'] == 'yem-offer' || x['id'] == 3 || x['code'] == 'yem-bill-offer' || x['id'] == 4,
+        orElse: () => <String, dynamic>{},
+      );
+      final items = s['items'];
+      if (items is List && items.isNotEmpty) {
+        final dynMap = <String, List<_PackageItem>>{
+          'باقات مزايا': <_PackageItem>[],
+          'باقات فورجي': <_PackageItem>[],
+          'باقات هدايا': <_PackageItem>[],
+          'باقات سوبر نت': <_PackageItem>[],
+          'باقات شهرية': <_PackageItem>[],
+          'باقات أسبوعية': <_PackageItem>[],
+          'باقات أخرى': <_PackageItem>[],
+        };
+        for (final it in items.whereType<Map>()) {
+          final id = int.tryParse('${it['id']}') ?? 0;
+          final name = '${it['name'] ?? ''}';
+          final pr = double.tryParse('${it['price'] ?? 0}') ?? 0;
+          if (name.isEmpty) continue;
+
+          String cat = 'باقات أخرى';
+          if (name.contains('مزايا')) {
+            cat = 'باقات مزايا';
+          } else if (name.contains('فورجي') || name.contains('4G') || name.contains('4g')) {
+            cat = 'باقات فورجي';
+          } else if (name.contains('هدايا')) {
+            cat = 'باقات هدايا';
+          } else if (name.contains('سوبر') || name.contains('نت')) {
+            cat = 'باقات سوبر نت';
+          } else if (name.contains('شهر') || name.contains('الشهرية')) {
+            cat = 'باقات شهرية';
+          } else if (name.contains('أسبوع') || name.contains('الاسبوعية')) {
+            cat = 'باقات أسبوعية';
+          }
+
+          dynMap[cat]!.add(_PackageItem(
+            id: id,
+            name: name,
+            category: cat,
+            subTitle: 'دفع مسبق / شريحة وبرمجة',
+            price: pr > 0 ? pr : 500,
+            days: name.contains('شهر') ? '30 يوم' : name.contains('أسبوع') ? '7 أيام' : 'صلاحية الباقة',
+            calls: 'رصيد اتصال',
+            sms: 'رسائل',
+            internet: 'بيانات انترنت',
+          ));
+        }
+
+        dynMap.removeWhere((k, v) => v.isEmpty);
+        if (dynMap.isNotEmpty) {
+          return dynMap;
+        }
+      }
+    } else if (op.id == 'you') {
+      final s = services.firstWhere(
+        (x) => x['code'] == 'you-offer' || x['id'] == 15,
+        orElse: () => <String, dynamic>{},
+      );
+      final items = s['items'];
+      if (items is List && items.isNotEmpty) {
+        final dynMap = <String, List<_PackageItem>>{
+          'باقات مكس': <_PackageItem>[],
+          'باقات نت': <_PackageItem>[],
+          'باقات اتصال': <_PackageItem>[],
+          'باقات أخرى': <_PackageItem>[],
+        };
+        for (final it in items.whereType<Map>()) {
+          final id = int.tryParse('${it['id']}') ?? 0;
+          final name = '${it['name'] ?? ''}';
+          final pr = double.tryParse('${it['price'] ?? 0}') ?? 0;
+          if (name.isEmpty) continue;
+
+          String cat = 'باقات أخرى';
+          if (name.contains('مكس')) {
+            cat = 'باقات مكس';
+          } else if (name.contains('نت') || name.contains('تواصل')) {
+            cat = 'باقات نت';
+          } else if (name.contains('اتصال') || name.contains('مكالمات')) {
+            cat = 'باقات اتصال';
+          }
+
+          dynMap[cat]!.add(_PackageItem(
+            id: id,
+            name: name,
+            category: cat,
+            subTitle: 'يو - YOU',
+            price: pr > 0 ? pr : 600,
+            days: 'حسب الباقة',
+          ));
+        }
+        dynMap.removeWhere((k, v) => v.isEmpty);
+        if (dynMap.isNotEmpty) {
+          return dynMap;
+        }
+      }
+    }
+
+    return base;
+  }
+
   // Pre-configured packages matching production
   final Map<String, List<_PackageItem>> yemenMobilePackages = const {
     'باقات مزايا': [
@@ -796,7 +908,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF3C7),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.4)),
+                      border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -857,7 +969,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
             title: Row(
               children: [
-                CircleAvatar(backgroundColor: currentOp.headerColor.withOpacity(0.12), child: Icon(Icons.receipt_long_rounded, color: currentOp.headerColor)),
+                CircleAvatar(backgroundColor: currentOp.headerColor.withValues(alpha: 0.12), child: Icon(Icons.receipt_long_rounded, color: currentOp.headerColor)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -1058,7 +1170,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               color: op.headerColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: op.headerColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3)),
+                BoxShadow(color: op.headerColor.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3)),
               ],
             ),
             child: Row(
@@ -1122,7 +1234,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               color: isSelected ? o.headerColor : Colors.white,
                               border: Border.all(color: o.headerColor, width: isSelected ? 2.5 : 1.5),
                               boxShadow: [
-                                if (isSelected) BoxShadow(color: o.headerColor.withOpacity(0.35), blurRadius: 8, offset: const Offset(0, 2)),
+                                if (isSelected) BoxShadow(color: o.headerColor.withValues(alpha: 0.35), blurRadius: 8, offset: const Offset(0, 2)),
                               ],
                             ),
                             alignment: Alignment.center,
@@ -1320,11 +1432,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Widget _buildPackagesTab(_OperatorSpec op) {
-    final Map<String, List<_PackageItem>> pkgMap = op.id == 'yemen_mobile'
-        ? yemenMobilePackages
-        : op.id == 'sabafon'
-            ? sabafonPackages
-            : youPackages;
+    final app = context.watch<AppController>();
+    final Map<String, List<_PackageItem>> pkgMap = _getPackagesForOp(op, app);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1570,7 +1679,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: cardBorder),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(

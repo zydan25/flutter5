@@ -43,6 +43,7 @@ class ApiClient {
   Future<Map<String,dynamic>> v2Root() async=>Map<String,dynamic>.from(await get('/v2/'));
   Future<Map<String,dynamic>> v2Schema() async=>Map<String,dynamic>.from(await get('/v2/schema/'));
   Future<Map<String,dynamic>> serviceCatalog() async=>Map<String,dynamic>.from(await get('/v2/services/catalog/'));
+  Future<Map<String,dynamic>> serviceSettings() async=>Map<String,dynamic>.from(await get('/v2/services/settings/'));
   Future<Map<String,dynamic>> serviceDetail(int id) async=>Map<String,dynamic>.from(await get('/v2/services/services/$id/'));
   Future<Map<String,dynamic>> serviceRequest({required int serviceId,required Map<String,dynamic> payload,String? itemType,int? itemId,String? idempotencyKey}) async {final key=idempotencyKey??'${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1<<30)}';return Map<String,dynamic>.from(await post('/v2/services/requests/',{'service_id':serviceId,'payload':payload,if(itemType!=null)'item_type':itemType,if(itemId!=null)'item_id':itemId},idempotencyKey:key));}
   Future<Map<String,dynamic>> serviceTransaction(String id) async=>Map<String,dynamic>.from(await get('/v2/services/requests/$id/'));

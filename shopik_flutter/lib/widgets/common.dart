@@ -56,7 +56,7 @@ class SectionHeader extends StatelessWidget {
           Container(
             width: 28,
             height: 28,
-            decoration: BoxDecoration(color: color.withOpacity(.10), borderRadius: BorderRadius.circular(9)),
+            decoration: BoxDecoration(color: color.withValues(alpha: .10), borderRadius: BorderRadius.circular(9)),
             child: Icon(icon, color: color, size: 16),
           ),
         if (icon != null) const SizedBox(width: 8),
@@ -78,7 +78,7 @@ class StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(color: color.withOpacity(.10), borderRadius: BorderRadius.circular(9), border: Border.all(color: color.withOpacity(.18))),
+      decoration: BoxDecoration(color: color.withValues(alpha: .10), borderRadius: BorderRadius.circular(9), border: Border.all(color: color.withValues(alpha: .18))),
       child: Text(text, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: color)),
     );
   }
@@ -115,7 +115,7 @@ class BusyOverlay extends StatelessWidget {
     if (!visible) return const SizedBox.shrink();
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(.45),
+        color: Colors.black.withValues(alpha: .45),
         child: Center(
           child: Container(
             width: 245,

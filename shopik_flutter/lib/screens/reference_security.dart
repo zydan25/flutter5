@@ -52,7 +52,7 @@ class _FingerprintSettingsScreenState extends State<FingerprintSettingsScreen> {
     } catch (e) { if (mounted) setState(() => result = e.toString()); }
     finally { if (mounted) setState(() => testing = false); }
   }
-  Widget _switch(String title,String subtitle,IconData icon,bool value,ValueChanged<bool> onChanged,{Color color=AppColors.burgundy}) => SwitchListTile.adaptive(contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:1),secondary:Container(width:40,height:40,decoration:BoxDecoration(color:color.withOpacity(.08),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color,size:22)),title:Text(title,style:const TextStyle(fontSize:11.5,fontWeight:FontWeight.w900)),subtitle:Text(subtitle,style:const TextStyle(fontSize:9,color:AppColors.muted)),value:value,activeColor:color,onChanged:onChanged);
+  Widget _switch(String title,String subtitle,IconData icon,bool value,ValueChanged<bool> onChanged,{Color color=AppColors.burgundy}) => SwitchListTile.adaptive(contentPadding:const EdgeInsets.symmetric(horizontal:12,vertical:1),secondary:Container(width:40,height:40,decoration:BoxDecoration(color:color.withValues(alpha: .08),borderRadius:BorderRadius.circular(13)),child:Icon(icon,color:color,size:22)),title:Text(title,style:const TextStyle(fontSize:11.5,fontWeight:FontWeight.w900)),subtitle:Text(subtitle,style:const TextStyle(fontSize:9,color:AppColors.muted)),value:value,activeColor:color,onChanged:onChanged);
 
   @override Widget build(BuildContext context) {
     final app = context.watch<AppController>();

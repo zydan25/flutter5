@@ -8,7 +8,9 @@ import 'reference_account.dart';
 import 'reference_security.dart';
 import 'screen_common.dart';
 import 'payment_screen.dart';
+import 'games_services_screen.dart';
 export 'payment_screen.dart';
+export 'games_services_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -35,10 +37,10 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.black.withOpacity(0.07), width: 1)),
+          border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.07), width: 1)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -72,7 +74,7 @@ class _HomeShellState extends State<HomeShell> {
         duration: const Duration(milliseconds: 200),
         padding: EdgeInsets.symmetric(horizontal: isSelected ? 10 : 5, vertical: 5),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor.withOpacity(0.12) : Colors.transparent,
+          color: isSelected ? activeColor.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -114,17 +116,18 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     final app = context.watch<AppController>();
     final user = app.user;
     final first = user?.name.trim().isNotEmpty == true ? user!.name.trim().substring(0, 1) : 'ش';
-    final shortcuts = const <_HomeShortcut>[
-      _HomeShortcut('شبكة السداد', 'خدمات الاتصالات والباقات', Icons.credit_card_rounded, AppColors.burgundy, 1),
-      _HomeShortcut('متجر شبيك', 'المنتجات والمتاجر والطلبات', Icons.storefront_rounded, AppColors.emerald, 2),
-      _HomeShortcut('سجل العمليات', 'العمليات الحقيقية من الخادم', Icons.receipt_long_rounded, AppColors.blue, 3),
-      _HomeShortcut('كشف الحساب', 'الرصيد والقيود المحاسبية', Icons.account_balance_wallet_rounded, AppColors.teal, 4),
-      _HomeShortcut('التقارير والإحصائيات', 'مبيعات الخدمات والأداء', Icons.bar_chart_rounded, AppColors.indigo, 5),
-      _HomeShortcut('تحويل لمشترك', 'إرسال رصيد لمشترك آخر', Icons.send_rounded, AppColors.amber, 6),
-      _HomeShortcut('كروت الوايفاي', 'الشبكات والكروت', Icons.wifi_rounded, AppColors.teal, 7),
-      _HomeShortcut('الألعاب والبرامج', 'الشحن والخدمات الرقمية', Icons.sports_esports_rounded, AppColors.purple, 8),
-      _HomeShortcut('البصمة والأمان', 'حماية الحساب والجهاز', Icons.fingerprint_rounded, Color(0xFF475569), 9),
-      _HomeShortcut('عناوين التوصيل', 'إدارة عناوين الشحن', Icons.location_on_rounded, AppColors.blue, 10),
+    final shortcuts = <_HomeShortcut>[
+      const _HomeShortcut('شبكة السداد', 'خدمات الاتصالات والباقات', Icons.credit_card_rounded, AppColors.burgundy, 1),
+      const _HomeShortcut('متجر شبيك', 'المنتجات والمتاجر والسلل', Icons.storefront_rounded, AppColors.emerald, 2),
+      _HomeShortcut('طلباتي (${app.orders.length})', 'متابعة وفحص الطلبات الحالية', Icons.shopping_bag_rounded, AppColors.emerald, 11),
+      const _HomeShortcut('سجل العمليات', 'العمليات الحقيقية من الخادم', Icons.receipt_long_rounded, AppColors.blue, 3),
+      const _HomeShortcut('كشف الحساب', 'الرصيد والقيود المحاسبية', Icons.account_balance_wallet_rounded, AppColors.teal, 4),
+      const _HomeShortcut('التقارير والإحصائيات', 'مبيعات الخدمات والأداء', Icons.bar_chart_rounded, AppColors.indigo, 5),
+      const _HomeShortcut('تحويل لمشترك', 'إرسال رصيد لمشترك آخر', Icons.send_rounded, AppColors.amber, 6),
+      const _HomeShortcut('كروت الوايفاي', 'الشبكات والكروت', Icons.wifi_rounded, AppColors.teal, 7),
+      const _HomeShortcut('الألعاب والبرامج', 'الشحن والخدمات الرقمية', Icons.sports_esports_rounded, AppColors.purple, 8),
+      const _HomeShortcut('البصمة والأمان', 'حماية الحساب والجهاز', Icons.fingerprint_rounded, Color(0xFF475569), 9),
+      const _HomeShortcut('عناوين التوصيل', 'إدارة عناوين الشحن', Icons.location_on_rounded, AppColors.blue, 10),
     ];
 
     return SafeArea(
@@ -214,10 +217,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
             ),
             const SizedBox(height: 9),
             Row(children: [
-              Expanded(child: _QuickAction(title: 'تغذية الحساب', subtitle: 'إيداع فوري', icon: Icons.add_circle_outline_rounded, color: AppColors.emerald, onTap: () => _showNoDepositContract(context))),
-              const SizedBox(width: 7),
+              Expanded(child: _QuickAction(title: 'طلباتي', subtitle: '${app.orders.length} طلب', icon: Icons.inventory_2_rounded, color: AppColors.emerald, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OrdersDetailView())))),
+              const SizedBox(width: 6),
+              Expanded(child: _QuickAction(title: 'تغذية الحساب', subtitle: 'إيداع فوري', icon: Icons.add_circle_outline_rounded, color: AppColors.blue, onTap: () => _showNoDepositContract(context))),
+              const SizedBox(width: 6),
               Expanded(child: _QuickAction(title: 'تحويل مالي', subtitle: 'بين المشتركين', icon: Icons.send_rounded, color: AppColors.amber, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriberTransferScreen())))),
-              const SizedBox(width: 7),
+              const SizedBox(width: 6),
               Expanded(child: _QuickAction(title: 'شبكة السداد', subtitle: 'خدمات رقمية', icon: Icons.credit_card_rounded, color: AppColors.burgundy, dark: true, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentScreen())))),
             ]),
             const SizedBox(height: 13),
@@ -283,6 +288,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       8: const GamesServicesScreen(),
       9: const FingerprintSettingsScreen(),
       10: const AddressesScreen(),
+      11: const OrdersDetailView(),
     };
     final page = pages[screen];
     if (page != null) Navigator.push(context, MaterialPageRoute(builder: (_) => page));
@@ -323,7 +329,7 @@ class DynamicServiceCard extends StatelessWidget {
                 InkWell(
                   onTap: () => _open(context, item),
                   borderRadius: BorderRadius.circular(12),
-                  child: Container(width: 112, padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(.22))), child: Column(children: [Text('${item['name'] ?? 'عنصر'}', maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900)), const SizedBox(height: 4), Text(money(item['price']), style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w900))])),
+                  child: Container(width: 112, padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: .22))), child: Column(children: [Text('${item['name'] ?? 'عنصر'}', maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900)), const SizedBox(height: 4), Text(money(item['price']), style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w900))])),
                 ),
             ],
           )
@@ -376,7 +382,7 @@ class _DynamicServiceDialogState extends State<DynamicServiceDialog> {
         width: 430,
         child: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            if (widget.item != null) Container(width: double.infinity, padding: const EdgeInsets.all(9), decoration: BoxDecoration(color: widget.color.withOpacity(.08), borderRadius: BorderRadius.circular(12)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('${widget.item!['name'] ?? 'العنصر'}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)), Text(money(widget.item!['price']), style: TextStyle(color: widget.color, fontWeight: FontWeight.w900))])),
+            if (widget.item != null) Container(width: double.infinity, padding: const EdgeInsets.all(9), decoration: BoxDecoration(color: widget.color.withValues(alpha: .08), borderRadius: BorderRadius.circular(12)), child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('${widget.item!['name'] ?? 'العنصر'}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900)), Text(money(widget.item!['price']), style: TextStyle(color: widget.color, fontWeight: FontWeight.w900))])),
             for (final field in list) Padding(padding: const EdgeInsets.only(top: 8), child: TextField(controller: fields['${field['key'] ?? ''}'], obscureText: field['secret'] == true, decoration: InputDecoration(labelText: '${field['label'] ?? field['key']}', isDense: true))),
           ]),
         ),
@@ -403,20 +409,6 @@ class _DynamicServiceDialogState extends State<DynamicServiceDialog> {
   }
 }
 
-class GamesServicesScreen extends StatelessWidget {
-  const GamesServicesScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppController>();
-    final services = app.catalogServices.where((service) {
-      final text = '${service['code'] ?? ''} ${service['name'] ?? ''} ${service['description'] ?? ''}'.toLowerCase();
-      return text.contains('game') || text.contains('digital') || text.contains('pubg') || text.contains('freefire') || text.contains('لعبة') || text.contains('برنامج');
-    }).toList();
-    final phone = TextEditingController(text: app.user?.phone ?? '');
-    return ScreenFrame(title: 'الألعاب والبرامج', color: AppColors.purple, actions: [IconButton(onPressed: app.refreshCatalog, icon: const Icon(Icons.sync_rounded))], child: RefreshIndicator(color: AppColors.purple, onRefresh: app.refreshCatalog, child: ListView(padding: const EdgeInsets.all(12), children: [const RefSection(title: 'الخدمات الرقمية', icon: Icons.sports_esports_rounded, color: AppColors.purple), const SizedBox(height: 8), if (services.isEmpty) const EmptyState(text: 'لا توجد خدمات ألعاب أو رقمية منشورة في الكتالوج.', icon: Icons.sports_esports_outlined), for (final service in services) DynamicServiceCard(service: service, color: AppColors.purple, phone: phone)])));
-  }
-}
-
 class _HomeShortcut {
   const _HomeShortcut(this.title, this.subtitle, this.icon, this.color, this.screen);
   final String title, subtitle;
@@ -429,7 +421,7 @@ class _WalletMini extends StatelessWidget {
   const _WalletMini({required this.title, required this.value, required this.icon});
   final String title, value;
   final IconData icon;
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withOpacity(.10), borderRadius: BorderRadius.circular(11)), child: Row(children: [Icon(icon, color: const Color(0xFFFDE68A), size: 16), const SizedBox(width: 6), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white70, fontSize: 7.5)), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900))]))]));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.white.withValues(alpha: .10), borderRadius: BorderRadius.circular(11)), child: Row(children: [Icon(icon, color: const Color(0xFFFDE68A), size: 16), const SizedBox(width: 6), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(color: Colors.white70, fontSize: 7.5)), Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900))]))]));
 }
 
 class _QuickAction extends StatelessWidget {

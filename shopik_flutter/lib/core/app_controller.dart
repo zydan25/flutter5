@@ -22,6 +22,8 @@ class AppController extends ChangeNotifier {
   List<Map<String, dynamic>> wifi = [];
   List<Map<String, dynamic>> wifiCards = [];
   List<Map<String, dynamic>> serviceCatalogRoots = [];
+  Map<String, int> serviceSettingsMap = {};
+  List<Map<String, dynamic>> serviceSettingsRaw = [];
   Timer? _poller;
 
   bool get isLoggedIn => user != null;
@@ -88,9 +90,28 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> refreshCatalog() async {
-    final data = await api.serviceCatalog();
-    final raw = data['categories'];
-    serviceCatalogRoots = raw is List ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
+    try {
+      final data = await api.serviceCatalog();
+      final raw = data['categories'];
+      serviceCatalogRoots = raw is List ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
+    } catch (_) {}
+
+    try {
+      final sData = await api.serviceSettings();
+      final list = sData['settings'];
+      if (list is List) {
+        serviceSettingsRaw = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        serviceSettingsMap.clear();
+        for (final item in serviceSettingsRaw) {
+          final key = '${item['key'] ?? ''}';
+          final svcId = int.tryParse('${item['service_id'] ?? ''}');
+          if (key.isNotEmpty && svcId != null && svcId > 0) {
+            serviceSettingsMap[key] = svcId;
+          }
+        }
+      }
+    } catch (_) {}
+
     notifyListeners();
   }
 
