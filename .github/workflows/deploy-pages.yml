@@ -1,56 +1,26 @@
-name: Build and Deploy to GitHub Pages
-
+name: Deploy original UI to GitHub Pages
 on:
   push:
-    branches: [main]
+    branches: [original-ui-flask-pages]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
-  group: pages
+  group: original-ui-pages
   cancel-in-progress: true
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Prepare dist from original dist_backup
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf dist
-          cp -a dist_backup dist
-
-          # The original build was generated for the site root.
-          # GitHub Pages serves this repository under /flutter5/.
-          # Only rewrite the small text files that contain absolute asset URLs.
-          sed -i 's#href="/assets/#href="/flutter5/assets/#g; s#src="/assets/#src="/flutter5/assets/#g; s#href="/manifest.json"#href="/flutter5/manifest.json"#g' dist/index.html
-          if [ -f dist/manifest.json ]; then
-            sed -i 's#"/icon-192.png"#"/flutter5/icon-192.png"#g; s#"/icon-512.png"#"/flutter5/icon-512.png"#g; s#"/icon-maskable-512.png"#"/flutter5/icon-maskable-512.png"#g; s#"/apple-touch-icon.png"#"/flutter5/apple-touch-icon.png"#g; s#"/favicon.png"#"/flutter5/favicon.png"#g; s#"/favicon.ico"#"/flutter5/favicon.ico"#g' dist/manifest.json
-          fi
-
-          cp dist/index.html dist/404.html
-          echo "Prepared dist from dist_backup"
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
