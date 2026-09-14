@@ -59,89 +59,15 @@ export interface Product {
   priceDropBadge?: { title: string; discountText: string };
 }
 
-export interface SubCategory {
-  id: string;
-  name: string;
-  image: string;
-  categoryId: string;
-  badge?: string;
-}
-
-export interface StyleTab {
-  id: string;
-  name: string;
-  image: string;
-  categoryId: string;
-}
-
-export interface SideCategory {
-  id: string;
-  name: string;
-  iconName?: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  iconName?: string;
-  itemCount?: number;
-  image?: string;
-  badge?: string;
-  subCategories?: SubCategory[];
-  styleTabs?: StyleTab[];
-  sideCategories?: SideCategory[];
-  banners?: Banner[];
-}
-
-export interface Banner {
-  id: string;
-  categoryId?: string;
-  title: string;
-  subtitle?: string;
-  badge?: string;
-  code?: string;
-  image: string;
-  discount?: string;
-}
-
-export interface TrendCampaign {
-  id: string;
-  hashtag: string;
-  title: string;
-  badge?: string;
-  daysLeft?: string;
-  bgImage: string;
-  productIds: string[];
-  isActive: boolean;
-  order: number;
-}
-
-export interface TrendHashtag {
-  id: string;
-  tag: string;
-  count?: number;
-  isActive?: boolean;
-  order?: number;
-}
-
-export interface CartItem {
-  product: Product;
-  quantity: number;
-  selectedColor?: string;
-  selectedSize?: string;
-  price: number;
-}
-
-export interface OrderItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  price: number;
-  image: string;
-  color?: string;
-  size?: string;
-}
-
+export interface SubCategory { id: string; name: string; image: string; categoryId: string; badge?: string; }
+export interface StyleTab { id: string; name: string; image: string; categoryId: string; }
+export interface SideCategory { id: string; name: string; iconName?: string; }
+export interface Category { id: string; name: string; iconName?: string; itemCount?: number; image?: string; badge?: string; subCategories?: SubCategory[]; styleTabs?: StyleTab[]; sideCategories?: SideCategory[]; banners?: Banner[]; }
+export interface Banner { id: string; categoryId?: string; title: string; subtitle?: string; badge?: string; code?: string; image: string; discount?: string; }
+export interface TrendCampaign { id: string; hashtag: string; title: string; badge?: string; daysLeft?: string; bgImage: string; productIds: string[]; isActive: boolean; order: number; }
+export interface TrendHashtag { id: string; tag: string; count?: number; isActive?: boolean; order?: number; }
+export interface CartItem { product: Product; quantity: number; selectedColor?: string; selectedSize?: string; price: number; }
+export interface OrderItem { productId: string; productName: string; quantity: number; price: number; image: string; color?: string; size?: string; }
 export interface Order {
   id: string;
   orderNumber: string;
@@ -155,32 +81,12 @@ export interface Order {
   discount: number;
   total: number;
   currency: 'YER' | 'SAR';
-  status: 'preparing' | 'in_shipping' | 'delivered' | 'cancelled';
+  status: 'awaiting_payment' | 'payment_submitted' | 'preparing' | 'in_shipping' | 'delivered' | 'cancelled';
   paymentMethod: 'cash_on_delivery' | 'kuraimi' | 'jawali' | 'one_cash';
   createdAt: string;
   updatedAt?: string;
   notes?: string;
   isPaid?: boolean;
 }
-
-export interface User {
-  uid: string;
-  phone: string;
-  firstName?: string;
-  secondName?: string;
-  thirdName?: string;
-  lastName?: string;
-  governorate?: string;
-  role?: 'admin' | 'customer';
-  isAdmin?: boolean;
-  createdAt?: string;
-  lastLoginAt?: string;
-}
-
-export interface PricingSettings {
-  sarToYerRateSouth: number;
-  usdToYerRateSouth: number;
-  sarToYerRateNorth: number;
-  usdToYerRateNorth: number;
-  freeShippingThreshold: number;
-}
+export interface User { uid: string; phone: string; firstName?: string; secondName?: string; thirdName?: string; lastName?: string; governorate?: string; role?: 'admin' | 'customer'; isAdmin?: boolean; createdAt?: string; lastLoginAt?: string; }
+export interface PricingSettings { sarToYerRateSouth: number; usdToYerRateSouth: number; sarToYerRateNorth: number; usdToYerRateNorth: number; freeShippingThreshold: number; }
