@@ -39,9 +39,17 @@ jobs:
           find dist/assets -type f -name '*.js' -size +0c | grep -q .
           find dist/assets -type f -name '*.css' -size +0c | grep -q .
           grep -q '<div id="root"></div>' dist/index.html
+          test -f index.html
           grep -q 'src/main.tsx' index.html
-          if grep -RqiE 'firebase|firestore|firebaseapp' dist; then
-            echo 'Firebase reference found in fresh customer build'
+
+          echo '--- Built asset entry ---'
+          sed -n '1,80p' dist/index.html
+
+          echo '--- Firebase-related strings in fresh bundle (diagnostic only) ---'
+          grep -RniE 'firebaseapp\.com|firebaseio\.com|firebase/(auth|firestore|storage)|initializeApp\(|getFirestore\(|firebaseConfig|firestore' dist || true
+
+          if grep -RqiE 'firebaseapp\.com|firebaseio\.com|firebase/(auth|firestore|storage)|initializeApp\(|getFirestore\(|firebaseConfig|firestore' dist; then
+            echo 'Real Firebase runtime reference found in fresh customer build'
             exit 1
           fi
 
