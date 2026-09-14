@@ -35,7 +35,6 @@ jobs:
           from pathlib import Path
           files = [
               Path('dist/index.html'),
-              Path('dist/404.html'),
               Path('dist/manifest.json'),
               Path('dist/sw.js'),
           ]
@@ -43,25 +42,38 @@ jobs:
               if not path.exists():
                   continue
               text = path.read_text(encoding='utf-8')
-              text = text.replace('href="/assets/', 'href="/flutter5/assets/')
-              text = text.replace('src="/assets/', 'src="/flutter5/assets/')
-              text = text.replace('src: "/', 'src: "/flutter5/')
-              text = text.replace("src: '/", "src: '/flutter5/")
-              text = text.replace("'/index.html'", "'/flutter5/index.html'")
-              text = text.replace("'/'", "'/flutter5/'")
-              text = text.replace('"/index.html"', '"/flutter5/index.html"')
-              text = text.replace('"/manifest.json"', '"/flutter5/manifest.json"')
-              text = text.replace('"/icon-192.png"', '"/flutter5/icon-192.png"')
-              text = text.replace('"/icon-512.png"', '"/flutter5/icon-512.png"')
-              text = text.replace('"/icon-maskable-512.png"', '"/flutter5/icon-maskable-512.png"')
-              text = text.replace('"/apple-touch-icon.png"', '"/flutter5/apple-touch-icon.png"')
-              text = text.replace('"/icon.svg"', '"/flutter5/icon.svg"')
-              text = text.replace('"/favicon.png"', '"/flutter5/favicon.png"')
+              replacements = {
+                  'href="/assets/': 'href="/flutter5/assets/',
+                  'src="/assets/': 'src="/flutter5/assets/',
+                  'src: "/': 'src: "/flutter5/',
+                  "src: '/": "src: '/flutter5/",
+                  "'/index.html'": "'/flutter5/index.html'",
+                  '"/index.html"': '"/flutter5/index.html"',
+                  "'/manifest.json'": "'/flutter5/manifest.json'",
+                  '"/manifest.json"': '"/flutter5/manifest.json"',
+                  "'/icon-192.png'": "'/flutter5/icon-192.png'",
+                  '"/icon-192.png"': '"/flutter5/icon-192.png"',
+                  "'/icon-512.png'": "'/flutter5/icon-512.png'",
+                  '"/icon-512.png"': '"/flutter5/icon-512.png"',
+                  "'/icon-maskable-512.png'": "'/flutter5/icon-maskable-512.png'",
+                  '"/icon-maskable-512.png"': '"/flutter5/icon-maskable-512.png"',
+                  "'/apple-touch-icon.png'": "'/flutter5/apple-touch-icon.png'",
+                  '"/apple-touch-icon.png"': '"/flutter5/apple-touch-icon.png"',
+                  "'/icon.svg'": "'/flutter5/icon.svg'",
+                  '"/icon.svg"': '"/flutter5/icon.svg"',
+                  "'/favicon.png'": "'/flutter5/favicon.png'",
+                  '"/favicon.png"': '"/flutter5/favicon.png"',
+                  "'/favicon.ico'": "'/flutter5/favicon.ico'",
+                  '"/favicon.ico"': '"/flutter5/favicon.ico"',
+                  "'/'": "'/flutter5/'",
+                  '"/"': '"/flutter5/"',
+              }
+              for old, new in replacements.items():
+                  text = text.replace(old, new)
               path.write_text(text, encoding='utf-8')
 
-          # GitHub Pages SPA fallback.
-          (Path('dist/index.html')).replace(Path('dist/404.html'))
-          print('Prepared dist from dist_backup')
+          cp dist/index.html dist/404.html
+          echo "Prepared dist from dist_backup"
           PY
 
       - name: Upload Pages artifact
