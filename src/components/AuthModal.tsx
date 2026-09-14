@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, User, Phone, MapPin, ShieldCheck, ArrowRight, LogOut, RefreshCw } from 'lucide-react';
 import type { User as UserType } from '../types';
 import { ALL_GOVERNORATES } from '../data/governorates';
-import { completeProfileApi, loginVerifyApi, sendOtpApi } from '../api';
+import { completeProfileApi, loginVerifyApi, logoutApi, sendOtpApi } from '../api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -49,10 +49,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, user, onClose, onL
       setLastName('');
       setGovernorate('أمانة العاصمة');
       setCooldown(0);
+      setBusy(false);
     }
   }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const requestOtp = async () => {
     const normalized = normalizePhone(phone);
@@ -86,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, user, onClose, onL
       const result = await loginVerifyApi(phone, otp);
       if (result.needsProfile) {
         setStep('profile');
-        onShowToast('الحساب جديد. أكمل بياناتك مرة واحدة.', 'info');
+        onShowToast('تم التحقق من الرقم. أكمل بيانات حسابك مرة واحدة.', 'info');
         return;
       }
       onLogin(result.user as UserType);
@@ -130,6 +129,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, user, onClose, onL
     }
   };
 
+  const handleLogout = async () => {
+    setBusy(true);
+    try {
+      await logoutApi();
+      onLogout();
+      onClose();
+      onShowToast('تم تسجيل الخروج من الخادم بنجاح', 'info');
+    } catch (error: any) {
+      // logoutApi clears the token even when the revoke request fails.
+      console.warn('Server logout failed:', error);
+      onLogout();
+      onClose();
+      onShowToast('تم إنهاء الجلسة محلياً', 'info');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
   const profileFields = (
     <>
       <div className="grid grid-cols-2 gap-2"><input required value={firstName} onChange={(event) => setFirstName(event.target.value)} placeholder="الاسم الأول *" className="p-2.5 rounded-xl border border-slate-200 text-xs" /><input value={secondName} onChange={(event) => setSecondName(event.target.value)} placeholder="اسم الأب" className="p-2.5 rounded-xl border border-slate-200 text-xs" /></div>
@@ -156,7 +175,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, user, onClose, onL
                   {user.isAdmin && <div className="inline-flex items-center gap-1 text-[10px] text-amber-800 mt-1"><ShieldCheck className="w-3 h-3" /> مدير المتجر</div>}
                 </div>
               </div>
-              <button onClick={() => { onLogout(); onClose(); onShowToast('تم تسجيل الخروج بنجاح', 'info'); }} className="w-full py-2.5 rounded-xl border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-center gap-2"><LogOut className="w-4 h-4" />تسجيل الخروج</button>
+              <button disabled={busy} onClick={handleLogout} className="w-full py-2.5 rounded-xl border border-rose-200 text-rose-600 text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50"><LogOut className="w-4 h-4" />تسجيل الخروج</button>
             </div>
           ) : step === 'phone' ? (
             <div className="space-y-3">
