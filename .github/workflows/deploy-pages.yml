@@ -25,15 +25,47 @@ jobs:
 
       - name: Prepare customer app
         run: |
+          set -euo pipefail
           test -f customer-app/index.html
-          test -f customer-app/assets/index-Co2L1R-b.js
+          test -f customer-app/assets/index-customer.js
           test -f customer-app/assets/index-DqlAnH_M.css
-          cp customer-app/index.html customer-app/404.html
+          rm -rf dist-pages
+          mkdir -p dist-pages/assets
+          cp customer-app/assets/index-customer.js dist-pages/assets/
+          cp customer-app/assets/index-DqlAnH_M.css dist-pages/assets/
+          cp customer-app/index.html dist-pages/index.html
+          sed -i \
+            -e 's#"/assets/index-Co2L1R-b.js"#"./assets/index-customer.js"#g' \
+            -e 's#"/assets/index-DqlAnH_M.css"#"./assets/index-DqlAnH_M.css"#g' \
+            -e 's#src="/assets/index-Co2L1R-b.js"#src="./assets/index-customer.js"#g' \
+            -e 's#href="/assets/index-DqlAnH_M.css"#href="./assets/index-DqlAnH_M.css"#g' \
+            -e 's#href="/manifest.json"#href="./manifest.json"#g' \
+            -e 's#href="/icon.svg"#href="./icon.svg"#g' \
+            -e 's#href="/icon-192.png"#href="./icon-192.png"#g' \
+            -e 's#href="/icon-512.png"#href="./icon-512.png"#g' \
+            -e 's#href="/apple-touch-icon.png"#href="./apple-touch-icon.png"#g' \
+            -e 's#href="/favicon.png"#href="./favicon.png"#g' \
+            -e 's#content="/icon-512.png"#content="./icon-512.png"#g' \
+            dist-pages/index.html
+          cp dist-pages/index.html dist-pages/404.html
+          for f in manifest.json icon.svg icon-192.png icon-512.png apple-touch-icon.png favicon.png; do
+            if test -f "customer-app/$f"; then cp "customer-app/$f" "dist-pages/$f"; fi
+          done
+
+      - name: Verify Pages artifact
+        run: |
+          set -euo pipefail
+          test -s dist-pages/index.html
+          test -s dist-pages/assets/index-customer.js
+          test -s dist-pages/assets/index-DqlAnH_M.css
+          test -s dist-pages/404.html
+          grep -q './assets/index-customer.js' dist-pages/index.html
+          grep -q './assets/index-DqlAnH_M.css' dist-pages/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: customer-app
+          path: dist-pages
 
       - name: Deploy
         id: deployment
