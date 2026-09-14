@@ -1,4 +1,4 @@
-import { bulkSaveFlaskProducts, getFlaskContent, getFlaskProducts, saveFlaskContent } from '../api';
+import { bulkSaveFlaskProducts, fetchCurrentUser, getFlaskContent, getFlaskProducts, saveFlaskContent } from '../api';
 import { INITIAL_PRODUCTS } from '../data/products';
 import { INITIAL_CATEGORIES } from '../data/categories';
 import { INITIAL_BANNERS } from '../data/banners';
@@ -6,6 +6,7 @@ import { INITIAL_TREND_CAMPAIGNS } from '../data/trends';
 
 const SEED_VERSION = 'flask-seed-v1';
 let running = false;
+let timer: number | undefined;
 
 function getRole(user: unknown): string {
   const value = user as { role?: string; isAdmin?: boolean } | null;
@@ -28,11 +29,7 @@ export async function runFirstStartFlaskMigration(user: unknown): Promise<void> 
 
     const contentEmpty = !serverContent.categories?.length && !serverContent.banners?.length && !serverContent.campaigns?.length;
     if (!alreadySeeded && contentEmpty) {
-      await saveFlaskContent({
-        categories: INITIAL_CATEGORIES,
-        banners: INITIAL_BANNERS,
-        campaigns: INITIAL_TREND_CAMPAIGNS,
-      });
+      await saveFlaskContent({ categories: INITIAL_CATEGORIES, banners: INITIAL_BANNERS, campaigns: INITIAL_TREND_CAMPAIGNS });
     }
 
     localStorage.setItem(SEED_VERSION, '1');
@@ -44,8 +41,9 @@ export async function runFirstStartFlaskMigration(user: unknown): Promise<void> 
 }
 
 export function registerFlaskMigrationListener(): void {
-  if (typeof window === 'undefined') return;
-  window.addEventListener('flask-auth-changed', () => {
-    void import('../api').then(({ fetchCurrentUser }) => fetchCurrentUser()).then((user) => runFirstStartFlaskMigration(user));
-  });
+  if (typeof window === 'undefined' || timer !== undefined) return;
+  const check = () => void fetchCurrentUser().then((user) => runFirstStartFlaskMigration(user));
+  window.addEventListener('flask-auth-changed', check);
+  check();
+  timer = window.setInterval(check, 5000);
 }
