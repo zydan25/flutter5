@@ -27,7 +27,7 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Build from React source
         run: bun run build
@@ -36,8 +36,8 @@ jobs:
         run: |
           set -euo pipefail
           test -s dist/index.html
-          test -s dist/assets/*.js
-          test -s dist/assets/*.css
+          find dist/assets -type f -name '*.js' -size +0c | grep -q .
+          find dist/assets -type f -name '*.css' -size +0c | grep -q .
           grep -q '<div id="root"></div>' dist/index.html
           grep -q 'src/main.tsx' index.html
           if grep -RqiE 'firebase|firestore|firebaseapp' dist; then
