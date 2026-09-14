@@ -28,8 +28,14 @@ jobs:
           rm -rf dist
           cp -a dist_backup dist
 
-          # Rewrite only references in HTML/manifest/service-worker files.
-          python3 -c "from pathlib import Path; files=[Path('dist/index.html'),Path('dist/manifest.json'),Path('dist/sw.js')]; repl={'href=\"/assets/':'href=\"/flutter5/assets/','src=\"/assets/':'src=\"/flutter5/assets/','src: \"/':'src: \"/flutter5/','src: \'/\':\"src: \'/flutter5/\",\"\'/index.html\'\":\"\'/flutter5/index.html\'\",\'\"/index.html\"\':\'\"/flutter5/index.html\"\',\"\'/manifest.json\'\":\"\'/flutter5/manifest.json\'\",\'\"/manifest.json\"\':\'\"/flutter5/manifest.json\"\',\"\'/icon-192.png\'\":\"\'/flutter5/icon-192.png\'\",\'\"/icon-192.png\"\':\'\"/flutter5/icon-192.png\"\',\"\'/icon-512.png\'\":\"\'/flutter5/icon-512.png\'\",\'\"/icon-512.png\"\':\'\"/flutter5/icon-512.png\"\',\"\'/icon-maskable-512.png\'\":\"\'/flutter5/icon-maskable-512.png\'\",\'\"/icon-maskable-512.png\"\':\'\"/flutter5/icon-maskable-512.png\"\',\"\'/apple-touch-icon.png\'\":\"\'/flutter5/apple-touch-icon.png\'\",\'\"/apple-touch-icon.png\"\':\'\"/flutter5/apple-touch-icon.png\"\',\"\'/icon.svg\'\":\"\'/flutter5/icon.svg\'\",\'\"/icon.svg\"\':\'\"/flutter5/icon.svg\"\',\"\'/favicon.png\'\":\"\'/flutter5/favicon.png\'\",\'\"/favicon.png\"\':\'\"/flutter5/favicon.png\"\',\"\'/favicon.ico\'\":\"\'/flutter5/favicon.ico\'\",\'\"/favicon.ico\"\':\'\"/flutter5/favicon.ico\"\',\"\'/\'\":\"\'/flutter5/\'\",\'\"/\"\':\'\"/flutter5/\"\'}; [p.write_text(__import__('functools').reduce(lambda s,kv:s.replace(*kv),repl.items(),p.read_text(encoding='utf-8')),encoding='utf-8') for p in files if p.exists()]"
+          # The original build was generated for the site root.
+          # GitHub Pages serves this repository under /flutter5/.
+          # Only rewrite the small text files that contain absolute asset URLs.
+          sed -i 's#href="/assets/#href="/flutter5/assets/#g; s#src="/assets/#src="/flutter5/assets/#g; s#href="/manifest.json"#href="/flutter5/manifest.json"#g' dist/index.html
+          if [ -f dist/manifest.json ]; then
+            sed -i 's#"/icon-192.png"#"/flutter5/icon-192.png"#g; s#"/icon-512.png"#"/flutter5/icon-512.png"#g; s#"/icon-maskable-512.png"#"/flutter5/icon-maskable-512.png"#g; s#"/apple-touch-icon.png"#"/flutter5/apple-touch-icon.png"#g; s#"/favicon.png"#"/flutter5/favicon.png"#g; s#"/favicon.ico"#"/flutter5/favicon.ico"#g' dist/manifest.json
+          fi
+
           cp dist/index.html dist/404.html
           echo "Prepared dist from dist_backup"
 
