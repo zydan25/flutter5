@@ -43,13 +43,12 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({
             <span>تم التوصيل بنجاح</span>
           </span>
         );
-      case 'awaiting_payment':
-        return <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">بانتظار الدفع</span>;
-      case 'payment_submitted':
-        return <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">تم إرسال إثبات الدفع</span>;
-      case 'cancelled':
       default:
-        return <span className="inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">ملغي</span>;
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+            <span>ملغي</span>
+          </span>
+        );
     }
   };
 
@@ -112,7 +111,7 @@ export const OrdersModal: React.FC<OrdersModalProps> = ({
                           {item.productName}
                         </span>
                         <span className="text-[10px] text-slate-500">
-                          الكمية: {item.quantity || 1} × {safeFormatNumber(item.price)} {ord.currency || currency}
+                          الكمية: {item.quantity || 1} × {safeFormatNumber(item.price)} ر.ي
                         </span>
                       </div>
                     </div>
