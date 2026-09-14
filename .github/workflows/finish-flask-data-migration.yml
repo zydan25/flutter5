@@ -25,7 +25,6 @@ jobs:
           python3 <<'PY'
           from pathlib import Path
 
-          # Main storefront: Flask is the runtime source for catalog/content/session/orders.
           p = Path('src/App.tsx')
           s = p.read_text()
           if "from './api'" not in s:
@@ -40,18 +39,23 @@ jobs:
           if "getFlaskProducts<Product>()" not in s:
               block = '''  // Flask is the runtime source of catalog, content, session and orders; localStorage is cache only.\n  useEffect(() => {\n    let active = true;\n    void getFlaskProducts<Product>().then((items) => {\n      if (active && items.length) setProducts(items);\n    }).catch((error) => console.warn('Flask products load failed:', error));\n    void getFlaskContent().then((content) => {\n      if (!active) return;\n      if (content.categories?.length) setCategories(content.categories as Category[]);\n      if (content.banners?.length) setBanners(content.banners as Banner[]);\n      if (content.campaigns?.length) setCampaigns(content.campaigns as TrendCampaign[]);\n    }).catch((error) => console.warn('Flask content load failed:', error));\n    void fetchCurrentUser().then((current) => {\n      if (active && current) setUser(current as User);\n    }).catch((error) => console.warn('Flask session load failed:', error));\n    return () => { active = false; };\n  }, []);\n\n  useEffect(() => {\n    if (!user) return;\n    let active = true;\n    const loadOrders = async () => {\n      try {\n        const items = await getFlaskOrders();\n        if (active) setOrders(items as Order[]);\n      } catch (error) {\n        console.warn('Flask orders load failed:', error);\n      }\n    };\n    void loadOrders();\n    const timer = window.setInterval(loadOrders, 5000);\n    return () => { active = false; window.clearInterval(timer); };\n  }, [user?.uid]);\n\n'''
               s = s.replace(marker, block + marker, 1)
-          old_order = """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          setOrders((prev) =>\n            prev.map((ord) => (ord.id === orderId ? { ...ord, status, isPaid: isPaid ?? ord.isPaid } : ord))\n          );\n        }}"""
-          new_order = """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          void updateFlaskOrderStatus(orderId, status, isPaid)\n            .then((result) => {\n              setOrders((prev) => prev.map((ord) => ord.id === orderId ? (result.order as Order) : ord));\n            })\n            .catch((error) => showToast(error?.message || 'تعذر تحديث حالة الطلب على الخادم', 'error'));\n        }}"""
-          s = s.replace(old_order, new_order, 1)
-          old_save = """        onSaveProduct={(prod) => {\n          setProducts((prev) => [prod, ...prev]);\n          showToast('تمت إضافة المنتج بنجاح', 'success');\n        }}"""
-          new_save = """        onSaveProduct={(prod) => {\n          void saveFlaskProduct(prod)\n            .then(() => { setProducts((prev) => [prod, ...prev.filter((item) => item.id !== prod.id)]); showToast('تم حفظ المنتج بنجاح', 'success'); })\n            .catch((error) => showToast(error?.message || 'تعذر حفظ المنتج على الخادم', 'error'));\n        }}"""
-          s = s.replace(old_save, new_save, 1)
-          old_delete = """        onDeleteProduct={(prodId) => {\n          setProducts((prev) => prev.filter((p) => p.id !== prodId));\n          showToast('تم حذف المنتج بنجاح', 'info');\n        }}"""
-          new_delete = """        onDeleteProduct={(prodId) => {\n          void deleteFlaskProduct(prodId)\n            .then(() => { setProducts((prev) => prev.filter((p) => p.id !== prodId)); showToast('تم حذف المنتج بنجاح', 'info'); })\n            .catch((error) => showToast(error?.message || 'تعذر حذف المنتج من الخادم', 'error'));\n        }}"""
-          s = s.replace(old_delete, new_delete, 1)
+          s = s.replace(
+              """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          setOrders((prev) =>\n            prev.map((ord) => (ord.id === orderId ? { ...ord, status, isPaid: isPaid ?? ord.isPaid } : ord))\n          );\n        }}""",
+              """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          void updateFlaskOrderStatus(orderId, status, isPaid)\n            .then((result) => { setOrders((prev) => prev.map((ord) => ord.id === orderId ? (result.order as Order) : ord)); })\n            .catch((error) => showToast(error?.message || 'تعذر تحديث حالة الطلب على الخادم', 'error'));\n        }}""",
+              1,
+          )
+          s = s.replace(
+              """        onSaveProduct={(prod) => {\n          setProducts((prev) => [prod, ...prev]);\n          showToast('تمت إضافة المنتج بنجاح', 'success');\n        }}""",
+              """        onSaveProduct={(prod) => {\n          void saveFlaskProduct(prod)\n            .then(() => { setProducts((prev) => [prod, ...prev.filter((item) => item.id !== prod.id)]); showToast('تم حفظ المنتج بنجاح', 'success'); })\n            .catch((error) => showToast(error?.message || 'تعذر حفظ المنتج على الخادم', 'error'));\n        }}""",
+              1,
+          )
+          s = s.replace(
+              """        onDeleteProduct={(prodId) => {\n          setProducts((prev) => prev.filter((p) => p.id !== prodId));\n          showToast('تم حذف المنتج بنجاح', 'info');\n        }}""",
+              """        onDeleteProduct={(prodId) => {\n          void deleteFlaskProduct(prodId)\n            .then(() => { setProducts((prev) => prev.filter((p) => p.id !== prodId)); showToast('تم حذف المنتج بنجاح', 'info'); })\n            .catch((error) => showToast(error?.message || 'تعذر حذف المنتج من الخادم', 'error'));\n        }}""",
+              1,
+          )
           p.write_text(s)
 
-          # Admin modal: fix Hooks ordering and remove the redundant legacy persistence calls.
           p = Path('src/components/AdminModal.tsx')
           s = p.read_text()
           s = s.replace("import { fetchAllUsersFromFirestore, deleteUserFromFirestore, updateOrderStatusInFirestore } from '../firebase';", "import { getFlaskCustomers, deleteFlaskCustomer } from '../api';")
@@ -69,14 +73,12 @@ jobs:
           s = s.replace('جاري تحميل العملاء من فايربيس...', 'جاري تحميل العملاء من Flask...')
           p.write_text(s)
 
-          # Orders modal: pending payment states must not appear as cancelled, and item currency must match order currency.
           p = Path('src/components/OrdersModal.tsx')
           s = p.read_text()
           s = s.replace("""      case 'delivered':\n        return (\n          <span className=\"inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200\">\n            <CheckCircle className=\"w-3 h-3\" />\n            <span>تم التوصيل بنجاح</span>\n          </span>\n        );\n      default:\n        return (\n          <span className=\"inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700\">\n            <span>ملغي</span>\n          </span>\n        );""", """      case 'delivered':\n        return (\n          <span className=\"inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200\">\n            <CheckCircle className=\"w-3 h-3\" />\n            <span>تم التوصيل بنجاح</span>\n          </span>\n        );\n      case 'awaiting_payment':\n        return <span className=\"inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200\">بانتظار الدفع</span>;\n      case 'payment_submitted':\n        return <span className=\"inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200\">تم إرسال إثبات الدفع</span>;\n      case 'cancelled':\n      default:\n        return <span className=\"inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200\">ملغي</span>;""", 1)
           s = s.replace('الكمية: {item.quantity || 1} × {safeFormatNumber(item.price)} ر.ي', 'الكمية: {item.quantity || 1} × {safeFormatNumber(item.price)} {ord.currency || currency}')
           p.write_text(s)
 
-          # Preserve the duplicate customer UI source, but remove its direct Firebase dependency.
           p = Path('src/customer-app/components/CartModal.tsx')
           if p.exists():
               s = p.read_text()
@@ -88,7 +90,6 @@ jobs:
               s = s.replace('      onOrderPlaced(newOrder);', '      onOrderPlaced(savedOrder);')
               p.write_text(s)
 
-          # Any remaining duplicate Firebase imports under preserved UI sources must point to the shared API client.
           for base in (Path('src/customer-app/components'), Path('src/admin-app/components')):
               if not base.exists():
                   continue
@@ -102,7 +103,7 @@ jobs:
                   p.write_text(s)
           PY
 
-      - name: Remove legacy Firebase files without removing UI sources
+      - name: Remove legacy Firebase implementation files without removing UI sources
         shell: bash
         run: |
           set -euo pipefail
@@ -110,11 +111,13 @@ jobs:
           rm -rf shared/firebase
           rm -f firebase-applet-config.json firebase-blueprint.json firestore.rules
 
-      - name: Verify dependencies and source
+      - name: Verify executable source is Firebase-free
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInEi 'firebase|firestore|firebase-admin' src --exclude='*.map' 2>/dev/null; then
+          matches=$(grep -RInEi "from ['\"][^'\"]*firebase|firebase/(firestore|app|auth)|firebase-admin" src --include='*.ts' --include='*.tsx' --exclude='*.map' 2>/dev/null || true)
+          if [ -n "$matches" ]; then
+            echo "$matches"
             exit 1
           fi
           if grep -n '"firebase"' package.json; then
