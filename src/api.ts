@@ -16,9 +16,7 @@ export function clearAccessToken(): void {
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers || {});
   headers.set('Accept', 'application/json');
-  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
   const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers });
@@ -50,6 +48,10 @@ export interface VerifySessionResponse {
   user: ApiUser;
 }
 
+export interface LoginVerifyResponse extends VerifySessionResponse {
+  needsProfile: boolean;
+}
+
 export interface FlaskContent {
   categories: any[];
   banners: any[];
@@ -79,6 +81,30 @@ export async function sendOtpApi(phoneNumber: string) {
   );
 }
 
+export async function loginVerifyApi(phoneNumber: string, otp: string): Promise<LoginVerifyResponse> {
+  const result = await apiFetch<LoginVerifyResponse>('/takhfid/api/v2/auth/login-verify', {
+    method: 'POST',
+    body: JSON.stringify({ phoneNumber, otp }),
+  });
+  setAccessToken(result.accessToken);
+  return result;
+}
+
+export async function completeProfileApi(payload: {
+  firstName: string;
+  secondName?: string;
+  thirdName?: string;
+  lastName?: string;
+  governorate: string;
+}): Promise<ApiUser> {
+  const result = await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/auth/complete-profile', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return result.user;
+}
+
+// Kept for compatibility with any older component; new authentication should use loginVerifyApi + completeProfileApi.
 export async function verifyOtpApi(payload: {
   phoneNumber: string;
   otp: string;
@@ -88,10 +114,7 @@ export async function verifyOtpApi(payload: {
   lastName?: string;
   governorate: string;
 }): Promise<VerifySessionResponse> {
-  const result = await apiFetch<VerifySessionResponse>('/takhfid/api/v2/auth/verify-otp', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  const result = await apiFetch<VerifySessionResponse>('/takhfid/api/v2/auth/verify-otp', { method: 'POST', body: JSON.stringify(payload) });
   setAccessToken(result.accessToken);
   return result;
 }
@@ -102,10 +125,7 @@ export async function getMyProfileApi(): Promise<ApiUser> {
 }
 
 export async function updateMyProfileApi(payload: Record<string, unknown>): Promise<ApiUser> {
-  const result = await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/me/profile', {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
+  const result = await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/me/profile', { method: 'PUT', body: JSON.stringify(payload) });
   return result.user;
 }
 
@@ -132,10 +152,7 @@ export async function deleteFlaskProduct(productId: string): Promise<void> {
 }
 
 export async function createFlaskOrder(input: unknown) {
-  return apiFetch<{ success: boolean; order: any }>('/takhfid/api/v2/orders', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
+  return apiFetch<{ success: boolean; order: any }>('/takhfid/api/v2/orders', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export async function getFlaskOrders() {
@@ -156,8 +173,7 @@ export async function getOrderChat(orderId: string) {
 
 export async function sendOrderChatMessageApi(orderId: string, message: { type: string; text?: string; imageUrl?: string }) {
   return apiFetch<{ success: boolean; message: any }>(`/takhfid/api/v2/orders/${encodeURIComponent(orderId)}/chat/messages`, {
-    method: 'POST',
-    body: JSON.stringify(message),
+    method: 'POST', body: JSON.stringify(message),
   });
 }
 
@@ -168,8 +184,7 @@ export async function getFlaskContent(): Promise<FlaskContent> {
 
 export async function saveFlaskContent(content: Partial<FlaskContent>): Promise<FlaskContent> {
   const result = await apiFetch<{ success: boolean; content: FlaskContent }>('/takhfid/admin/api/content', {
-    method: 'PUT',
-    body: JSON.stringify(content),
+    method: 'PUT', body: JSON.stringify(content),
   });
   return result.content;
 }
