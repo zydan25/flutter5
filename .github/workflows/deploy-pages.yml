@@ -1,10 +1,10 @@
-name: Build and Deploy Flask Migration Preview
+name: Build and Deploy Flask Storefront
 
 on:
   push:
-    branches: [fix-flask-auth-migration-step1]
+    branches: [main, backup-before-original-ui-flask-2026-09-14, fix-flask-auth-migration-step1]
   pull_request:
-    branches: [backup-before-original-ui-flask-2026-09-14]
+    branches: [main, backup-before-original-ui-flask-2026-09-14]
   workflow_dispatch:
 
 permissions:
@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-flask-migration
+  group: pages-flask-storefront
   cancel-in-progress: true
 
 jobs:
