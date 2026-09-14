@@ -2,7 +2,7 @@ name: Deploy Customer App Pages
 
 on:
   push:
-    branches: [customer-app-pages-2026-09-14]
+    branches: [clean-source-pages-2026-09-14]
   workflow_dispatch:
 
 permissions:
@@ -15,39 +15,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          ref: ${{ github.sha }}
+          bun-version: latest
 
-      - name: Prepare customer app
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build from React source
+        run: bun run build
+
+      - name: Verify fresh build
         run: |
           set -euo pipefail
-          test -f customer-app/index.html
-          test -f customer-app/assets/index-customer.js
-          test -f customer-app/assets/index-DqlAnH_M.css
+          test -s dist/index.html
+          test -s dist/assets/*.js
+          test -s dist/assets/*.css
+          grep -q '<div id="root"></div>' dist/index.html
+          grep -q 'src/main.tsx' index.html
+          if grep -RqiE 'firebase|firestore|firebaseapp' dist; then
+            echo 'Firebase reference found in fresh customer build'
+            exit 1
+          fi
+
+      - name: Prepare Pages artifact
+        run: |
+          set -euo pipefail
           rm -rf dist-pages
-          mkdir -p dist-pages/assets
-          cp customer-app/assets/index-customer.js dist-pages/assets/index-Co2L1R-b.js
-          cp customer-app/assets/index-DqlAnH_M.css dist-pages/assets/
-          cp customer-app/index.html dist-pages/index.html
-          cp dist-pages/index.html dist-pages/404.html
-          for f in manifest.json icon.svg icon-192.png icon-512.png apple-touch-icon.png favicon.png; do
-            if test -f "customer-app/$f"; then cp "customer-app/$f" "dist-pages/$f"; fi
-          done
-
-      - name: Verify Pages artifact
-        run: |
-          set -euo pipefail
-          test -s dist-pages/index.html
-          test -s dist-pages/assets/index-Co2L1R-b.js
-          test -s dist-pages/assets/index-DqlAnH_M.css
-          test -s dist-pages/404.html
-          grep -Eq 'src="(\./)?assets/index-Co2L1R-b\.js"' dist-pages/index.html
-          grep -Eq 'href="(\./)?assets/index-DqlAnH_M\.css"' dist-pages/index.html
+          cp -R dist dist-pages
+          cp dist/index.html dist-pages/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
