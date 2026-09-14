@@ -25,10 +25,10 @@ export interface LoginVerifyResponse extends VerifySessionResponse { needsProfil
 export interface FlaskContent { categories: any[]; banners: any[]; campaigns: any[]; }
 
 export async function fetchCurrentUser(): Promise<ApiUser | null> { if (!getAccessToken()) return null; try { return (await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/auth/me')).user; } catch { clearAccessToken(); return null; } }
-export async function logoutApi(): Promise<void> { try { await apiFetch('/takhfid/api/v2/auth/logout', { method: 'POST' }); } finally { clearAccessToken(); } }
+export async function logoutApi(): Promise<void> { try { await apiFetch('/takhfid/api/v2/auth/session-revoke', { method: 'POST' }); } finally { clearAccessToken(); } }
 
 export async function sendOtpApi(phoneNumber: string) {
-  return apiFetch<{ success: boolean; expiresInSeconds: number; retryAfterSeconds: number; phoneNumber: string }>('/takhfid/api/v2/auth/send-otp', { method: 'POST', body: JSON.stringify({ phoneNumber }) });
+  return apiFetch<{ success: boolean; expiresInSeconds: number; retryAfterSeconds: number; phoneNumber: string }>('/takhfid/api/auth/send-otp', { method: 'POST', body: JSON.stringify({ phoneNumber }) });
 }
 export async function loginVerifyApi(phoneNumber: string, otp: string): Promise<LoginVerifyResponse> {
   const result = await apiFetch<LoginVerifyResponse>('/takhfid/api/v2/auth/login-verify', { method: 'POST', body: JSON.stringify({ phoneNumber, otp }) });
