@@ -22,19 +22,9 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    cache: 'no-store',
-  });
-
-  const data = (await response.json().catch(() => ({}))) as T & {
-    error?: string;
-    message?: string;
-  };
-  if (!response.ok) {
-    throw new Error(data.error || data.message || `HTTP ${response.status}`);
-  }
+  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers, cache: 'no-store' });
+  const data = (await response.json().catch(() => ({}))) as T & { error?: string; message?: string };
+  if (!response.ok) throw new Error(data.error || data.message || `HTTP ${response.status}`);
   return data;
 }
 
@@ -73,51 +63,19 @@ export interface FlaskContent {
 
 export async function fetchCurrentUser(): Promise<ApiUser | null> {
   if (!getAccessToken()) return null;
-  try {
-    return (await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/auth/me')).user;
-  } catch {
-    clearAccessToken();
-    return null;
-  }
+  try { return (await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/auth/me')).user; }
+  catch { clearAccessToken(); return null; }
 }
 
 export async function logoutApi(): Promise<void> {
-  try {
-    await apiFetch('/takhfid/api/v2/auth/session-revoke', { method: 'POST' });
-  } finally {
-    clearAccessToken();
-  }
+  try { await apiFetch('/takhfid/api/v2/auth/logout', { method: 'POST' }); }
+  finally { clearAccessToken(); }
 }
 
 export async function sendOtpApi(phoneNumber: string) {
   return apiFetch<{ success: boolean; expiresInSeconds: number; retryAfterSeconds: number; phoneNumber: string }>(
-    '/takhfid/api/v2/auth/send-otp',
-    { method: 'POST', body: JSON.stringify({ phoneNumber }) },
+    '/takhfid/api/v2/auth/send-otp', { method: 'POST', body: JSON.stringify({ phoneNumber }) },
   );
-}
-
-export async function loginVerifyApi(phoneNumber: string, otp: string): Promise<LoginVerifyResponse> {
-  // The Flask v2 login endpoint intentionally accepts only phone + OTP.
-  // Profile data belongs to the separate /auth/complete-profile step.
-  const result = await apiFetch<LoginVerifyResponse>('/takhfid/api/v2/auth/login-verify', {
-    method: 'POST',
-    body: JSON.stringify({ phoneNumber, otp }),
-  });
-  setAccessToken(result.accessToken);
-  return result;
-}
-
-export async function completeProfileApi(payload: {
-  firstName: string;
-  secondName?: string;
-  thirdName?: string;
-  lastName?: string;
-  governorate: string;
-}): Promise<ApiUser> {
-  return (await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/auth/complete-profile', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })).user;
 }
 
 export async function verifyOtpApi(payload: {
@@ -143,8 +101,7 @@ export async function getMyProfileApi(): Promise<ApiUser> {
 
 export async function updateMyProfileApi(payload: Record<string, unknown>): Promise<ApiUser> {
   return (await apiFetch<{ success: boolean; user: ApiUser }>('/takhfid/api/v2/me/profile', {
-    method: 'PUT',
-    body: JSON.stringify(payload),
+    method: 'PUT', body: JSON.stringify(payload),
   })).user;
 }
 
@@ -166,8 +123,7 @@ export async function saveFlaskProduct(product: unknown): Promise<any> {
 
 export async function bulkSaveFlaskProducts(products: unknown[]): Promise<{ count: number }> {
   return apiFetch<{ success: boolean; count: number }>('/takhfid/api/v2/products/bulk', {
-    method: 'POST',
-    body: JSON.stringify({ products }),
+    method: 'POST', body: JSON.stringify({ products }),
   });
 }
 
@@ -177,8 +133,7 @@ export async function deleteFlaskProduct(productId: string): Promise<void> {
 
 export async function createFlaskOrder(input: unknown) {
   return apiFetch<{ success: boolean; order: any }>('/takhfid/api/v2/orders', {
-    method: 'POST',
-    body: JSON.stringify(input),
+    method: 'POST', body: JSON.stringify(input),
   });
 }
 
@@ -188,8 +143,7 @@ export async function getFlaskOrders() {
 
 export async function updateFlaskOrderStatus(orderId: string, status: string, isPaid?: boolean) {
   return apiFetch<{ success: boolean; order: any }>(`/takhfid/api/v2/orders/${encodeURIComponent(orderId)}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status, ...(typeof isPaid === 'boolean' ? { isPaid } : {}) }),
+    method: 'PATCH', body: JSON.stringify({ status, ...(typeof isPaid === 'boolean' ? { isPaid } : {}) }),
   });
 }
 
@@ -201,28 +155,21 @@ export async function getOrderChat(orderId: string) {
   return apiFetch<{ success: boolean; messages: any[] }>(`/takhfid/api/v2/orders/${encodeURIComponent(orderId)}/chat`);
 }
 
-export async function sendOrderChatMessageApi(
-  orderId: string,
-  message: { type: string; text?: string; imageUrl?: string },
-) {
-  return apiFetch<{ success: boolean; message: any }>(
-    `/takhfid/api/v2/orders/${encodeURIComponent(orderId)}/chat/messages`,
-    { method: 'POST', body: JSON.stringify(message) },
-  );
+export async function sendOrderChatMessageApi(orderId: string, message: { type: string; text?: string; imageUrl?: string }) {
+  return apiFetch<{ success: boolean; message: any }>(`/takhfid/api/v2/orders/${encodeURIComponent(orderId)}/chat/messages`, {
+    method: 'POST', body: JSON.stringify(message),
+  });
 }
 
 export async function getFlaskContent(): Promise<FlaskContent> {
   return (await apiFetch<{ success: boolean; content: FlaskContent }>('/takhfid/admin/api/content')).content || {
-    categories: [],
-    banners: [],
-    campaigns: [],
+    categories: [], banners: [], campaigns: [],
   };
 }
 
 export async function saveFlaskContent(content: Partial<FlaskContent>): Promise<FlaskContent> {
   return (await apiFetch<{ success: boolean; content: FlaskContent }>('/takhfid/admin/api/content', {
-    method: 'PUT',
-    body: JSON.stringify(content),
+    method: 'PUT', body: JSON.stringify(content),
   })).content;
 }
 
