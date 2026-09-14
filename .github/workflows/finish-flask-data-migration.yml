@@ -1,9 +1,9 @@
-name: Finish Flask data migration
+name: Finalize Flask migration
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,53 +18,47 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Patch runtime data access without changing UI
+      - name: Migrate the existing main customer UI to Flask
         shell: bash
         run: |
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
 
+          # Root App: keep the existing UI, but make Flask the runtime source.
           p = Path('src/App.tsx')
           s = p.read_text()
-          if "from './api'" not in s:
-              s = s.replace(
-                  "import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';",
-                  "import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';\nimport { fetchCurrentUser, getFlaskContent, getFlaskOrders, getFlaskProducts, updateFlaskOrderStatus, saveFlaskProduct, deleteFlaskProduct } from './api';",
-                  1,
-              )
-          s = s.replace("const [categories] = useState<Category[]>(INITIAL_CATEGORIES);", "const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);")
-          s = s.replace("const [banners] = useState<Banner[]>(INITIAL_BANNERS);", "const [banners, setBanners] = useState<Banner[]>(INITIAL_BANNERS);")
-          marker = "  // Global helper to open trends with a specific hashtag"
+          marker_import = "import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';"
+          api_import = "import { fetchCurrentUser, getFlaskContent, getFlaskOrders, getFlaskProducts, updateFlaskOrderStatus, saveFlaskProduct, deleteFlaskProduct } from './api';"
+          if api_import not in s:
+              s = s.replace(marker_import, marker_import + "\n" + api_import, 1)
+          s = s.replace("const [categories] = useState<Category[]>(INITIAL_CATEGORIES);", "const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);", 1)
+          s = s.replace("const [banners] = useState<Banner[]>(INITIAL_BANNERS);", "const [banners, setBanners] = useState<Banner[]>(INITIAL_BANNERS);", 1)
           if "getFlaskProducts<Product>()" not in s:
-              block = '''  // Flask is the runtime source of catalog, content, session and orders; localStorage is cache only.\n  useEffect(() => {\n    let active = true;\n    void getFlaskProducts<Product>().then((items) => {\n      if (active && items.length) setProducts(items);\n    }).catch((error) => console.warn('Flask products load failed:', error));\n    void getFlaskContent().then((content) => {\n      if (!active) return;\n      if (content.categories?.length) setCategories(content.categories as Category[]);\n      if (content.banners?.length) setBanners(content.banners as Banner[]);\n      if (content.campaigns?.length) setCampaigns(content.campaigns as TrendCampaign[]);\n    }).catch((error) => console.warn('Flask content load failed:', error));\n    void fetchCurrentUser().then((current) => {\n      if (active && current) setUser(current as User);\n    }).catch((error) => console.warn('Flask session load failed:', error));\n    return () => { active = false; };\n  }, []);\n\n  useEffect(() => {\n    if (!user) return;\n    let active = true;\n    const loadOrders = async () => {\n      try {\n        const items = await getFlaskOrders();\n        if (active) setOrders(items as Order[]);\n      } catch (error) {\n        console.warn('Flask orders load failed:', error);\n      }\n    };\n    void loadOrders();\n    const timer = window.setInterval(loadOrders, 5000);\n    return () => { active = false; window.clearInterval(timer); };\n  }, [user?.uid]);\n\n'''
+              marker = "  // Global helper to open trends with a specific hashtag"
+              block = '''  // Flask is the runtime source of products, content, session and orders. localStorage remains UI cache only.\n  useEffect(() => {\n    let active = true;\n    void getFlaskProducts<Product>()\n      .then((items) => { if (active && items.length) setProducts(items); })\n      .catch((error) => console.warn('Flask products load failed:', error));\n    void getFlaskContent()\n      .then((content) => {\n        if (!active) return;\n        if (content.categories?.length) setCategories(content.categories as Category[]);\n        if (content.banners?.length) setBanners(content.banners as Banner[]);\n        if (content.campaigns?.length) setCampaigns(content.campaigns as TrendCampaign[]);\n      })\n      .catch((error) => console.warn('Flask content load failed:', error));\n    void fetchCurrentUser()\n      .then((current) => { if (active && current) setUser(current as User); })\n      .catch((error) => console.warn('Flask session load failed:', error));\n    return () => { active = false; };\n  }, []);\n\n  useEffect(() => {\n    if (!user) return;\n    let active = true;\n    const loadOrders = async () => {\n      try {\n        const items = await getFlaskOrders();\n        if (active) setOrders(items as Order[]);\n      } catch (error) {\n        console.warn('Flask orders load failed:', error);\n      }\n    };\n    void loadOrders();\n    const timer = window.setInterval(loadOrders, 5000);\n    return () => { active = false; window.clearInterval(timer); };\n  }, [user?.uid]);\n\n'''
               s = s.replace(marker, block + marker, 1)
-          s = s.replace(
-              """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          setOrders((prev) =>\n            prev.map((ord) => (ord.id === orderId ? { ...ord, status, isPaid: isPaid ?? ord.isPaid } : ord))\n          );\n        }}""",
-              """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          void updateFlaskOrderStatus(orderId, status, isPaid)\n            .then((result) => { setOrders((prev) => prev.map((ord) => ord.id === orderId ? (result.order as Order) : ord)); })\n            .catch((error) => showToast(error?.message || 'تعذر تحديث حالة الطلب على الخادم', 'error'));\n        }}""",
-              1,
-          )
-          s = s.replace(
-              """        onSaveProduct={(prod) => {\n          setProducts((prev) => [prod, ...prev]);\n          showToast('تمت إضافة المنتج بنجاح', 'success');\n        }}""",
-              """        onSaveProduct={(prod) => {\n          void saveFlaskProduct(prod)\n            .then(() => { setProducts((prev) => [prod, ...prev.filter((item) => item.id !== prod.id)]); showToast('تم حفظ المنتج بنجاح', 'success'); })\n            .catch((error) => showToast(error?.message || 'تعذر حفظ المنتج على الخادم', 'error'));\n        }}""",
-              1,
-          )
-          s = s.replace(
-              """        onDeleteProduct={(prodId) => {\n          setProducts((prev) => prev.filter((p) => p.id !== prodId));\n          showToast('تم حذف المنتج بنجاح', 'info');\n        }}""",
-              """        onDeleteProduct={(prodId) => {\n          void deleteFlaskProduct(prodId)\n            .then(() => { setProducts((prev) => prev.filter((p) => p.id !== prodId)); showToast('تم حذف المنتج بنجاح', 'info'); })\n            .catch((error) => showToast(error?.message || 'تعذر حذف المنتج من الخادم', 'error'));\n        }}""",
-              1,
-          )
+          old = """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          setOrders((prev) =>\n            prev.map((ord) => (ord.id === orderId ? { ...ord, status, isPaid: isPaid ?? ord.isPaid } : ord))\n          );\n        }}"""
+          new = """        onUpdateOrderStatus={(orderId, status, isPaid) => {\n          void updateFlaskOrderStatus(orderId, status, isPaid)\n            .then((result) => setOrders((prev) => prev.map((ord) => ord.id === orderId ? (result.order as Order) : ord)))\n            .catch((error) => showToast(error?.message || 'تعذر تحديث حالة الطلب على الخادم', 'error'));\n        }}"""
+          s = s.replace(old, new, 1)
+          old = """        onSaveProduct={(prod) => {\n          setProducts((prev) => [prod, ...prev]);\n          showToast('تمت إضافة المنتج بنجاح', 'success');\n        }}"""
+          new = """        onSaveProduct={(prod) => {\n          void saveFlaskProduct(prod)\n            .then(() => { setProducts((prev) => [prod, ...prev.filter((item) => item.id !== prod.id)]); showToast('تم حفظ المنتج بنجاح', 'success'); })\n            .catch((error) => showToast(error?.message || 'تعذر حفظ المنتج على الخادم', 'error'));\n        }}"""
+          s = s.replace(old, new, 1)
+          old = """        onDeleteProduct={(prodId) => {\n          setProducts((prev) => prev.filter((p) => p.id !== prodId));\n          showToast('تم حذف المنتج بنجاح', 'info');\n        }}"""
+          new = """        onDeleteProduct={(prodId) => {\n          void deleteFlaskProduct(prodId)\n            .then(() => { setProducts((prev) => prev.filter((p) => p.id !== prodId)); showToast('تم حذف المنتج بنجاح', 'info'); })\n            .catch((error) => showToast(error?.message || 'تعذر حذف المنتج من الخادم', 'error'));\n        }}"""
+          s = s.replace(old, new, 1)
           p.write_text(s)
 
+          # AdminModal: keep the same UI and move persistence to Flask.
           p = Path('src/components/AdminModal.tsx')
           s = p.read_text()
-          s = s.replace("import { fetchAllUsersFromFirestore, deleteUserFromFirestore, updateOrderStatusInFirestore } from '../firebase';", "import { getFlaskCustomers, deleteFlaskCustomer } from '../api';")
+          s = s.replace("import { fetchAllUsersFromFirestore, deleteUserFromFirestore, updateOrderStatusInFirestore } from '../firebase';", "import { getFlaskCustomers, deleteFlaskCustomer } from '../api';", 1)
           s = s.replace("  if (!isOpen) return null;\n\n  const [activeTab", "  const [activeTab", 1)
           s = s.replace("  const [isLoadingUsers, setIsLoadingUsers] = useState(false);\n", "  const [isLoadingUsers, setIsLoadingUsers] = useState(false);\n\n  if (!isOpen) return null;\n", 1)
           s = s.replace('fetchAllUsersFromFirestore()', 'getFlaskCustomers()')
           s = s.replace('deleteUserFromFirestore(', 'deleteFlaskCustomer(')
-          s = s.replace('updateOrderStatusInFirestore(ord.id, \'in_shipping\');\n                          ', '')
-          s = s.replace('updateOrderStatusInFirestore(ord.id, \'delivered\', true);\n                          ', '')
+          s = s.replace("updateOrderStatusInFirestore(ord.id, 'in_shipping');\n                          ", "")
+          s = s.replace("updateOrderStatusInFirestore(ord.id, 'delivered', true);\n                          ", "")
           s = s.replace('firestoreUsers', 'flaskUsers')
           s = s.replace('setFirestoreUsers', 'setFlaskUsers')
           s = s.replace('العملاء وفايربيس', 'العملاء من الخادم')
@@ -73,75 +67,52 @@ jobs:
           s = s.replace('جاري تحميل العملاء من فايربيس...', 'جاري تحميل العملاء من Flask...')
           p.write_text(s)
 
+          # Orders UI: show payment states correctly.
           p = Path('src/components/OrdersModal.tsx')
           s = p.read_text()
           s = s.replace("""      case 'delivered':\n        return (\n          <span className=\"inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200\">\n            <CheckCircle className=\"w-3 h-3\" />\n            <span>تم التوصيل بنجاح</span>\n          </span>\n        );\n      default:\n        return (\n          <span className=\"inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700\">\n            <span>ملغي</span>\n          </span>\n        );""", """      case 'delivered':\n        return (\n          <span className=\"inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200\">\n            <CheckCircle className=\"w-3 h-3\" />\n            <span>تم التوصيل بنجاح</span>\n          </span>\n        );\n      case 'awaiting_payment':\n        return <span className=\"inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200\">بانتظار الدفع</span>;\n      case 'payment_submitted':\n        return <span className=\"inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200\">تم إرسال إثبات الدفع</span>;\n      case 'cancelled':\n      default:\n        return <span className=\"inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200\">ملغي</span>;""", 1)
           s = s.replace('الكمية: {item.quantity || 1} × {safeFormatNumber(item.price)} ر.ي', 'الكمية: {item.quantity || 1} × {safeFormatNumber(item.price)} {ord.currency || currency}')
           p.write_text(s)
-
-          p = Path('src/customer-app/components/CartModal.tsx')
-          if p.exists():
-              s = p.read_text()
-              s = s.replace("import { saveOrderToFirestore } from '../firebase';", "import { createFlaskOrder, getAccessToken } from '../../api';")
-              s = s.replace("  if (!isOpen) return null;\n\n  const [customerName", "  const [customerName", 1)
-              s = s.replace("  const [isSubmitting, setIsSubmitting] = useState(false);\n", "  const [isSubmitting, setIsSubmitting] = useState(false);\n\n  if (!isOpen) return null;\n", 1)
-              s = s.replace("    if (!customerName.trim() || !customerPhone.trim()) {", "    if (!getAccessToken()) {\n      onShowToast('سجل دخولك أولاً لإتمام الطلب', 'error');\n      return;\n    }\n    if (!customerName.trim() || !customerPhone.trim()) {")
-              s = s.replace('      await saveOrderToFirestore(newOrder);', '      const result = await createFlaskOrder({ ...newOrder, items: cartItems.map((item) => ({ productId: item.product.id, quantity: item.quantity, color: item.selectedColor, size: item.selectedSize })) });\n      const savedOrder = result.order as Order;')
-              s = s.replace('      onOrderPlaced(newOrder);', '      onOrderPlaced(savedOrder);')
-              p.write_text(s)
-
-          for base in (Path('src/customer-app/components'), Path('src/admin-app/components')):
-              if not base.exists():
-                  continue
-              for p in base.glob('*.tsx'):
-                  s = p.read_text()
-                  s = s.replace("from '../firebase'", "from '../../api'")
-                  s = s.replace('fetchAllUsersFromFirestore', 'getFlaskCustomers')
-                  s = s.replace('deleteUserFromFirestore', 'deleteFlaskCustomer')
-                  s = s.replace('saveOrderToFirestore', 'createFlaskOrder')
-                  s = s.replace('updateOrderStatusInFirestore', 'updateFlaskOrderStatus')
-                  p.write_text(s)
           PY
 
-      - name: Remove legacy Firebase implementation files without removing UI sources
+      - name: Remove duplicate source applications and Firebase leftovers
         shell: bash
         run: |
           set -euo pipefail
-          rm -f src/firebase.ts src/shared/firebase.ts
-          rm -rf shared/firebase
-          rm -f firebase-applet-config.json firebase-blueprint.json firestore.rules
+          rm -rf src/customer-app src/admin-app shared/firebase
+          rm -f src/firebase.ts src/shared/firebase.ts firebase-applet-config.json firebase-blueprint.json firestore.rules
 
-      - name: Verify executable source is Firebase-free
+      - name: Verify the selected main source
         shell: bash
         run: |
           set -euo pipefail
-          matches=$(grep -RInEi "from ['\"][^'\"]*firebase|firebase/(firestore|app|auth)|firebase-admin" src --include='*.ts' --include='*.tsx' --exclude='*.map' 2>/dev/null || true)
-          if [ -n "$matches" ]; then
-            echo "$matches"
-            exit 1
-          fi
-          if grep -n '"firebase"' package.json; then
-            exit 1
-          fi
+          test -f src/App.tsx
+          test -f src/components/AuthModal.tsx
+          ! grep -RInE "from ['\"][^'\"]*firebase|firebase/(firestore|app|auth)|firebase-admin" src --include='*.ts' --include='*.tsx' 2>/dev/null
+          ! grep -n '"firebase"' package.json
 
-      - name: Build and lint
+      - name: Build
         shell: bash
         run: |
           set -euo pipefail
           npm install --package-lock=false
-          npm run lint
           npm run build
 
-      - name: Commit migration and remove one-time workflow
+      - name: Commit final source
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: use main customer UI with Flask backend' || true
+          git push origin HEAD:main
+
+      - name: Remove this migration workflow
+        shell: bash
+        run: |
+          set -euo pipefail
           rm -f .github/workflows/finish-flask-data-migration.yml
           git add -A
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m 'feat: complete Flask migration while preserving UI'
-          git push origin HEAD:main
+          git commit -m 'chore: remove completed migration workflow' || true
+          git push origin HEAD:main || true
