@@ -2,10 +2,7 @@ name: Build and Deploy SHOPIK to GitHub Pages
 
 on:
   push:
-    branches:
-      - shopik-restored-pages-2026-09-14
-    paths-ignore:
-      - '**/*.md'
+    branches: [shopik-restored-pages-2026-09-14]
   workflow_dispatch:
 
 permissions:
@@ -20,9 +17,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout clean build
         uses: actions/checkout@v4
