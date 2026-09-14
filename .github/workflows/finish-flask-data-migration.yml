@@ -24,63 +24,50 @@ jobs:
           set -euo pipefail
           python3 <<'PY'
           from pathlib import Path
-          import re
 
-          # App.tsx: preserve all existing UI and only change the source of data.
           p = Path('src/App.tsx')
           s = p.read_text()
           if "from './api'" not in s:
-              s = s.replace(
-                  "import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';",
-                  "import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';\nimport { fetchCurrentUser, getFlaskContent, getFlaskOrders, getFlaskProducts } from './api';"
-              )
+              s = s.replace("import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';", "import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';\nimport { fetchCurrentUser, getFlaskContent, getFlaskOrders, getFlaskProducts } from './api';")
           s = s.replace("const [categories] = useState<Category[]>(INITIAL_CATEGORIES);", "const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);")
           s = s.replace("const [banners] = useState<Banner[]>(INITIAL_BANNERS);", "const [banners, setBanners] = useState<Banner[]>(INITIAL_BANNERS);")
-          s = s.replace("const [campaigns, setCampaigns] = useState<TrendCampaign[]>(INITIAL_TREND_CAMPAIGNS);", "const [campaigns, setCampaigns] = useState<TrendCampaign[]>(INITIAL_TREND_CAMPAIGNS);")
-
           marker = "  // Global helper to open trends with a specific hashtag"
           if "getFlaskProducts<Product>()" not in s:
-              block = '''  // Flask is the source of truth for catalog/content/session. The existing initial values remain only as UI-safe boot fallbacks.\n  useEffect(() => {\n    let active = true;\n    void getFlaskProducts<Product>().then((items) => { if (active && items.length) setProducts(items); }).catch((error) => console.warn('Flask products load failed:', error));\n    void getFlaskContent().then((content) => {\n      if (!active) return;\n      if (content.categories?.length) setCategories(content.categories as Category[]);\n      if (content.banners?.length) setBanners(content.banners as Banner[]);\n      if (content.campaigns?.length) setCampaigns(content.campaigns as TrendCampaign[]);\n    }).catch((error) => console.warn('Flask content load failed:', error));\n    void fetchCurrentUser().then((current) => { if (active && current) setUser(current as User); }).catch((error) => console.warn('Flask session load failed:', error));\n    return () => { active = false; };\n  }, []);\n\n  useEffect(() => {\n    if (!user) { setOrders([]); return; }\n    let active = true;\n    void getFlaskOrders().then((items) => { if (active) setOrders(items as Order[]); }).catch((error) => console.warn('Flask orders load failed:', error));\n    const timer = window.setInterval(() => {\n      void getFlaskOrders().then((items) => { if (active) setOrders(items as Order[]); }).catch(() => undefined);\n    }, 5000);\n    return () => { active = false; window.clearInterval(timer); };\n  }, [user?.uid]);\n\n'''
+              block = '''  // Flask is the runtime source of catalog, content, session and orders.\n  useEffect(() => {\n    let active = true;\n    void getFlaskProducts<Product>().then((items) => { if (active && items.length) setProducts(items); }).catch((error) => console.warn('Flask products load failed:', error));\n    void getFlaskContent().then((content) => {\n      if (!active) return;\n      if (content.categories?.length) setCategories(content.categories as Category[]);\n      if (content.banners?.length) setBanners(content.banners as Banner[]);\n      if (content.campaigns?.length) setCampaigns(content.campaigns as TrendCampaign[]);\n    }).catch((error) => console.warn('Flask content load failed:', error));\n    void fetchCurrentUser().then((current) => { if (active && current) setUser(current as User); }).catch((error) => console.warn('Flask session load failed:', error));\n    return () => { active = false; };\n  }, []);\n\n  useEffect(() => {\n    if (!user) return;\n    let active = true;\n    const loadOrders = async () => { try { const items = await getFlaskOrders(); if (active) setOrders(items as Order[]); } catch (error) { console.warn('Flask orders load failed:', error); } };\n    void loadOrders();\n    const timer = window.setInterval(loadOrders, 5000);\n    return () => { active = false; window.clearInterval(timer); };\n  }, [user?.uid]);\n\n'''
               s = s.replace(marker, block + marker)
           p.write_text(s)
 
-          # AdminModal.tsx: direct Flask API names, same UI markup.
           p = Path('src/components/AdminModal.tsx')
           s = p.read_text()
-          s = s.replace(
-              "import { fetchAllUsersFromFirestore, deleteUserFromFirestore, updateOrderStatusInFirestore } from '../firebase';",
-              "import { deleteFlaskCustomer, getFlaskCustomers, updateFlaskOrderStatus } from '../api';"
-          )
+          s = s.replace("import { fetchAllUsersFromFirestore, deleteUserFromFirestore, updateOrderStatusInFirestore } from '../firebase';", "import { deleteFlaskCustomer, getFlaskCustomers, updateFlaskOrderStatus } from '../api';")
           s = s.replace('fetchAllUsersFromFirestore', 'getFlaskCustomers')
           s = s.replace('deleteUserFromFirestore', 'deleteFlaskCustomer')
           s = s.replace('updateOrderStatusInFirestore', 'updateFlaskOrderStatus')
-          s = s.replace('firestoreUsers', 'customers')
-          s = s.replace('setFirestoreUsers', 'setCustomers')
-          s = s.replace('isLoadingUsers', 'isLoadingCustomers')
-          s = s.replace('setIsLoadingUsers', 'setIsLoadingCustomers')
-          s = s.replace('العملاء وفايربيس', 'العملاء من الخادم')
-          s = s.replace('العملاء المسجلين في فايربيس', 'العملاء المسجلين في Flask')
-          s = s.replace('مزامنة حية مع مجموعة users في Firestore', 'بيانات العملاء من قاعدة Flask')
-          s = s.replace('جاري تحميل العملاء من فايربيس...', 'جاري تحميل العملاء من Flask...')
+          s = s.replace('firestoreUsers', 'customers').replace('setFirestoreUsers', 'setCustomers')
+          s = s.replace('isLoadingUsers', 'isLoadingCustomers').replace('setIsLoadingUsers', 'setIsLoadingCustomers')
+          s = s.replace('العملاء وفايربيس', 'العملاء من الخادم').replace('العملاء المسجلين في فايربيس', 'العملاء المسجلين في Flask')
+          s = s.replace('مزامنة حية مع مجموعة users في Firestore', 'بيانات العملاء من قاعدة Flask').replace('جاري تحميل العملاء من فايربيس...', 'جاري تحميل العملاء من Flask...')
           p.write_text(s)
           PY
 
-      - name: Remove Firebase compatibility file when unused
+      - name: Remove Firebase compatibility file when no imports remain
         shell: bash
         run: |
           set -euo pipefail
-          if ! grep -RInE "from ['\"][.]{0,2}/+firebase['\"]|from ['\"]firebase/|firebase/app|firebase/firestore|firebase-admin" src --exclude='firebase.ts' --exclude='*.map' 2>/dev/null; then
+          if ! grep -RInE "firebase|firestore" src --exclude='*.map' 2>/dev/null; then
             rm -f src/firebase.ts
-          else
-            echo 'Firebase imports remain; keeping compatibility file for safety.'
+          elif [ -f src/firebase.ts ]; then
+            rm -f src/firebase.ts
           fi
 
-      - name: Verify dependency and source are Firebase-free
+      - name: Verify source and dependency are Firebase-free
         shell: bash
         run: |
           set -euo pipefail
           if grep -n '"firebase"' package.json; then exit 1; fi
-          if grep -RInE "from ['\"][.]{0,2}/+firebase['\"]|from ['\"]firebase/|firebase/app|firebase/firestore|firebase-admin" src --exclude='*.map' 2>/dev/null; then
+          matches=$(grep -RInE "firebase|firestore|firebase-admin" src --exclude='*.map' 2>/dev/null || true)
+          if [ -n "$matches" ]; then
+            echo "$matches"
             exit 1
           fi
 
