@@ -18,10 +18,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
+      - name: Checkout clean build
         uses: actions/checkout@v4
 
       - name: Setup Bun
@@ -48,10 +51,8 @@ jobs:
           test "$(find dist/assets -type f -name '*.js' | wc -l)" -ge 1
           test "$(find dist/assets -type f -name '*.css' | wc -l)" -ge 1
           cp dist/index.html dist/404.html
-          printf '%s\n' '=== dist/index.html ==='
-          sed -n '1,80p' dist/index.html
 
-      - name: Configure GitHub Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
@@ -59,15 +60,6 @@ jobs:
         with:
           path: dist
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
