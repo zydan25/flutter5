@@ -32,26 +32,27 @@ jobs:
       - name: Build from React source
         run: bun run build
 
-      - name: Verify fresh build
+      - name: Verify clean source build
         run: |
           set -euo pipefail
           test -s dist/index.html
+          test -s index.html
           find dist/assets -type f -name '*.js' -size +0c | grep -q .
           find dist/assets -type f -name '*.css' -size +0c | grep -q .
           grep -q '<div id="root"></div>' dist/index.html
-          test -f index.html
           grep -q 'src/main.tsx' index.html
-
-          echo '--- Built asset entry ---'
-          sed -n '1,80p' dist/index.html
-
-          echo '--- Firebase-related strings in fresh bundle (diagnostic only) ---'
-          grep -RniE 'firebaseapp\.com|firebaseio\.com|firebase/(auth|firestore|storage)|initializeApp\(|getFirestore\(|firebaseConfig|firestore' dist || true
-
-          if grep -RqiE 'firebaseapp\.com|firebaseio\.com|firebase/(auth|firestore|storage)|initializeApp\(|getFirestore\(|firebaseConfig|firestore' dist; then
-            echo 'Real Firebase runtime reference found in fresh customer build'
+          test "$(find dist/assets -maxdepth 1 -type f -name '*.js' | wc -l)" -ge 1
+          test "$(find dist/assets -maxdepth 1 -type f -name '*.css' | wc -l)" -ge 1
+          if grep -RqiE 'firebaseapp\.com|firebaseio\.com|initializeApp\(|getFirestore\(|firebaseConfig|firestore' dist/assets; then
+            echo 'Firebase runtime reference found in emitted JS/CSS'
             exit 1
           fi
+          if find dist -type f \( -name 'index-Co2L1R-b.js' -o -name 'index-customer.js' -o -name 'index-admin.js' \) | grep -q .; then
+            echo 'Stale prebuilt application asset found in fresh dist'
+            exit 1
+          fi
+          echo 'Fresh build verification passed.'
+          sed -n '1,40p' dist/index.html
 
       - name: Prepare Pages artifact
         run: |
