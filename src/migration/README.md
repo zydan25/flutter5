@@ -1,1 +1,0 @@
-Temporary migration marker for the Flask-first transition. Runtime source remains the existing customer UI; Firebase is not used by this migration layer.
