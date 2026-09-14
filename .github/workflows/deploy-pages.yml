@@ -27,10 +27,14 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.2.21
+          bun-version: 1.4.2
 
-      - name: Install dependencies from bun.lock
-        run: bun install --frozen-lockfile
+      - name: Install dependencies from package.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f bun.lock bun.lockb
+          bun install --no-save
 
       - name: Build production bundle
         run: bun run build
