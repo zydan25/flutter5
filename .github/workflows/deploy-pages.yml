@@ -1,10 +1,8 @@
-name: Build and Deploy Flask Storefront
+name: Deploy Customer App Pages
 
 on:
   push:
-    branches: [main, backup-before-original-ui-flask-2026-09-14, fix-flask-auth-migration-step1]
-  pull_request:
-    branches: [main, backup-before-original-ui-flask-2026-09-14]
+    branches: [customer-app-pages-2026-09-14]
   workflow_dispatch:
 
 permissions:
@@ -13,44 +11,32 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-flask-storefront
+  group: pages-customer-app
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.2.21
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Build customer app
-        run: bun run build
-
-      - name: Prepare GitHub Pages SPA fallback
-        run: cp dist/index.html dist/404.html
+      - name: Prepare customer app
+        run: |
+          test -f customer-app/index.html
+          test -f customer-app/assets/index-Co2L1R-b.js
+          test -f customer-app/assets/index-DqlAnH_M.css
+          cp customer-app/index.html customer-app/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: customer-app
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
