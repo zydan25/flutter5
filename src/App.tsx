@@ -19,6 +19,7 @@ import { AuthModal } from './components/AuthModal';
 import { CustomerChatModal } from './components/CustomerChatModal';
 import { Toast } from './components/Toast';
 import { Flame, Sparkles, MessageCircle, ChevronLeft } from 'lucide-react';
+import { fetchCurrentUser, getFlaskContent, getFlaskOrders, getFlaskProducts, updateFlaskOrderStatus, saveFlaskProduct, deleteFlaskProduct } from './api';
 
 export const App: React.FC = () => {
   // Store Data States
@@ -46,8 +47,8 @@ export const App: React.FC = () => {
     }
     return INITIAL_PRODUCTS;
   });
-  const [categories] = useState<Category[]>(INITIAL_CATEGORIES);
-  const [banners] = useState<Banner[]>(INITIAL_BANNERS);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [banners, setBanners] = useState<Banner[]>(INITIAL_BANNERS);
   const [campaigns, setCampaigns] = useState<TrendCampaign[]>(INITIAL_TREND_CAMPAIGNS);
   const [hashtags] = useState<string[]>(INITIAL_TREND_HASHTAGS);
 
@@ -160,6 +161,42 @@ export const App: React.FC = () => {
       localStorage.removeItem('altakhfid_user');
     }
   }, [user]);
+
+  // Flask is the runtime source of products, content, session and orders. localStorage remains UI cache only.
+  useEffect(() => {
+    let active = true;
+    void getFlaskProducts<Product>()
+      .then((items) => { if (active && items.length) setProducts(items); })
+      .catch((error) => console.warn('Flask products load failed:', error));
+    void getFlaskContent()
+      .then((content) => {
+        if (!active) return;
+        if (content.categories?.length) setCategories(content.categories as Category[]);
+        if (content.banners?.length) setBanners(content.banners as Banner[]);
+        if (content.campaigns?.length) setCampaigns(content.campaigns as TrendCampaign[]);
+      })
+      .catch((error) => console.warn('Flask content load failed:', error));
+    void fetchCurrentUser()
+      .then((current) => { if (active && current) setUser(current as User); })
+      .catch((error) => console.warn('Flask session load failed:', error));
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    const loadOrders = async () => {
+      try {
+        const items = await getFlaskOrders();
+        if (active) setOrders(items as Order[]);
+      } catch (error) {
+        console.warn('Flask orders load failed:', error);
+      }
+    };
+    void loadOrders();
+    const timer = window.setInterval(loadOrders, 5000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [user?.uid]);
 
   // Global helper to open trends with a specific hashtag
   useEffect(() => {
@@ -616,17 +653,19 @@ export const App: React.FC = () => {
         campaigns={campaigns}
         onClose={() => setIsAdminOpen(false)}
         onUpdateOrderStatus={(orderId, status, isPaid) => {
-          setOrders((prev) =>
-            prev.map((ord) => (ord.id === orderId ? { ...ord, status, isPaid: isPaid ?? ord.isPaid } : ord))
-          );
+          void updateFlaskOrderStatus(orderId, status, isPaid)
+            .then((result) => setOrders((prev) => prev.map((ord) => ord.id === orderId ? (result.order as Order) : ord)))
+            .catch((error) => showToast(error?.message || 'تعذر تحديث حالة الطلب على الخادم', 'error'));
         }}
         onSaveProduct={(prod) => {
-          setProducts((prev) => [prod, ...prev]);
-          showToast('تمت إضافة المنتج بنجاح', 'success');
+          void saveFlaskProduct(prod)
+            .then(() => { setProducts((prev) => [prod, ...prev.filter((item) => item.id !== prod.id)]); showToast('تم حفظ المنتج بنجاح', 'success'); })
+            .catch((error) => showToast(error?.message || 'تعذر حفظ المنتج على الخادم', 'error'));
         }}
         onDeleteProduct={(prodId) => {
-          setProducts((prev) => prev.filter((p) => p.id !== prodId));
-          showToast('تم حذف المنتج بنجاح', 'info');
+          void deleteFlaskProduct(prodId)
+            .then(() => { setProducts((prev) => prev.filter((p) => p.id !== prodId)); showToast('تم حذف المنتج بنجاح', 'info'); })
+            .catch((error) => showToast(error?.message || 'تعذر حذف المنتج من الخادم', 'error'));
         }}
         onUpdateCampaigns={setCampaigns}
         onShowToast={showToast}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, Users, Package, ShoppingBag, Flame, RefreshCw, CheckCircle, Trash2, Edit2, Plus, Phone } from 'lucide-react';
 import type { Order, Product, TrendCampaign, User } from '../types';
-import { fetchAllUsersFromFirestore, deleteUserFromFirestore, updateOrderStatusInFirestore } from '../firebase';
+import { getFlaskCustomers, deleteFlaskCustomer } from '../api';
 import { safeFormatNumber } from '../utils/pricing';
 
 interface AdminModalProps {
@@ -29,18 +29,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   onUpdateCampaigns,
   onShowToast,
 }) => {
-  if (!isOpen) return null;
-
   const [activeTab, setActiveTab] = useState<'orders' | 'customers' | 'products' | 'trends'>('orders');
-  const [firestoreUsers, setFirestoreUsers] = useState<User[]>([]);
+  const [flaskUsers, setFlaskUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  if (!isOpen) return null;
 
   // Load registered users from Firestore
   const loadUsers = async () => {
     setIsLoadingUsers(true);
     try {
-      const users = await fetchAllUsersFromFirestore();
-      setFirestoreUsers(users);
+      const users = await getFlaskCustomers();
+      setFlaskUsers(users);
     } catch (err) {
       console.error(err);
     } finally {
@@ -56,8 +56,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
   const handleDeleteUser = async (uid: string) => {
     if (window.confirm('هل أنت متأكد من حذف حساب هذا العميل؟')) {
-      await deleteUserFromFirestore(uid);
-      setFirestoreUsers((prev) => prev.filter((u) => u.uid !== uid));
+      await deleteFlaskCustomer(uid);
+      setFlaskUsers((prev) => prev.filter((u) => u.uid !== uid));
       onShowToast('تم حذف العميل بنجاح من قاعدة البيانات', 'success');
     }
   };
@@ -115,7 +115,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>العملاء وفايربيس</span>
+            <span>العملاء من الخادم</span>
           </button>
 
           <button
@@ -189,7 +189,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       <button
                         onClick={() => {
                           onUpdateOrderStatus(ord.id, 'in_shipping');
-                          updateOrderStatusInFirestore(ord.id, 'in_shipping');
                           onShowToast(`تم تحديث حالة الطلب إلى جاري الشحن 🚚`, 'success');
                         }}
                         className="text-xs font-bold px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all"
@@ -199,7 +198,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       <button
                         onClick={() => {
                           onUpdateOrderStatus(ord.id, 'delivered', true);
-                          updateOrderStatusInFirestore(ord.id, 'delivered', true);
                           onShowToast(`تم تأكيد تسليم الطلب واستلام المبلغ ✅`, 'success');
                         }}
                         className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center gap-1"
@@ -219,8 +217,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-slate-800">العملاء المسجلين في فايربيس</h3>
-                  <p className="text-xs text-slate-500">مزامنة حية مع مجموعة users في Firestore</p>
+                  <h3 className="font-bold text-sm text-slate-800">العملاء المسجلين في Flask</h3>
+                  <p className="text-xs text-slate-500">بيانات العملاء من قاعدة Flask</p>
                 </div>
                 <button
                   onClick={loadUsers}
@@ -233,14 +231,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               </div>
 
               {isLoadingUsers ? (
-                <div className="p-8 text-center text-xs text-slate-500">جاري تحميل العملاء من فايربيس...</div>
-              ) : firestoreUsers.length === 0 ? (
+                <div className="p-8 text-center text-xs text-slate-500">جاري تحميل العملاء من Flask...</div>
+              ) : flaskUsers.length === 0 ? (
                 <div className="bg-white p-8 rounded-2xl text-center border border-slate-100 text-slate-500 text-xs">
                   لا يوجد عملاء مسجلين حالياً في قاعدة البيانات.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {firestoreUsers.map((u) => (
+                  {flaskUsers.map((u) => (
                     <div
                       key={u.uid}
                       className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between"
