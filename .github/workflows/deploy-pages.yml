@@ -17,12 +17,10 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout clean build
         uses: actions/checkout@v4
+
       - name: Prepare Pages artifact
         shell: bash
         run: |
@@ -31,10 +29,15 @@ jobs:
           mkdir -p site/assets
           cp index.html manifest.json sw.js apple-touch-icon.png favicon.ico favicon.png icon-192.png icon-512.png icon-maskable-512.png icon-maskable.svg icon.svg site/
           cp assets/* site/assets/
+          test -s site/index.html
+          test -s site/assets/index-Co2L1R-b.js
+          test -s site/assets/index-DqlAnH_M.css
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
